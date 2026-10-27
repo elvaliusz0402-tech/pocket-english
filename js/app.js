@@ -3,7 +3,7 @@ import { Store, SCENES, sceneName, sceneIcon, uid, newSRS } from './store.js';
 import {
   generateVariants, enrichSentences, cleanText, splitSentences,
   guessScene, toEntry, llmConfig, saveLLMConfig, llmReady, PRESETS, corpus, phrasebook,
-  normalizeBaseUrl, localVariants, engineStatus
+  normalizeBaseUrl, localVariants, engineStatus, testLLM
 } from './engine.js';
 import { buildIndex, searchEntries } from './search.js';
 import { recognize, downscale } from './ocr.js';
@@ -193,7 +193,7 @@ async function onGenerate() {
     out.innerHTML = `<div class="card"><div class="muted">生成失败：${esc(e.message)}</div>
       <div class="muted" style="margin-top:8px">可在设置里配置大模型，或换个说法再试。</div></div>`;
   } finally {
-    btn.disabled = false; btn.textContent = '生成地道说法';
+    btn.disabled = false; btn.textContent = '翻译成地道英文';
   }
 }
 
@@ -695,8 +695,8 @@ async function openSettings() {
       <input type="checkbox" data-on ${cfg.enabled ? 'checked' : ''} style="width:auto">
       <span>启用 AI 增强</span>
     </label>
-    <div class="btn-row"><button class="btn soft sm" id="s-test">测试连接</button>
-      <span class="muted" id="s-test-out"></span></div>
+    <div class="btn-row"><button class="btn soft sm" id="s-test">测试连接</button></div>
+    <div class="muted" id="s-test-out" style="margin-top:8px;font-size:13px;line-height:1.6">会先检查配置是否填全，再真实请求一次接口。</div>
     <hr class="sep">
     <div class="section-title" style="margin-top:0">数据</div>
     <div class="btn-row">
@@ -715,7 +715,7 @@ async function openSettings() {
   const s = sheet('设置', node);
   const verNode = node.querySelector('#s-ver');
   appVersion().then((v) => {
-    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v6</b><br>
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v7</b><br>
     若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
   });
   const presetSel = node.querySelector('[data-preset]');
@@ -738,13 +738,9 @@ async function openSettings() {
     const cfg = { ...collect(), enabled: true };
     await saveLLMConfig(cfg);
     urlIn.value = cfg.url;              // 回显纠正后的地址
-    try {
-      const { generateVariants } = await import('./engine.js');
-      const r = await generateVariants('我想确认一下明天的会议时间');
-      out.textContent = r.source === 'ai'
-        ? '✅ 连接成功（' + (r.variants[0]?.en || '').slice(0, 28) + '…）'
-        : '⚠️ 未生效：' + (r.aiError || '返回异常');
-    } catch (e) { out.textContent = '❌ ' + e.message.slice(0, 90); }
+    const r = await testLLM();
+    out.textContent = r.msg;
+    out.style.color = r.ok ? 'var(--fjord)' : 'var(--rose)';
   };
   node.querySelector('#s-export').onclick = async () => {
     const data = JSON.stringify(await Store.all(), null, 2);
@@ -799,9 +795,15 @@ async function renderBanner() {
   const box = document.getElementById('llm-banner');
   const st = await engineStatus();
   const ver = await appVersion();
-  box.innerHTML = st.ai
-    ? `<div class="banner ok">✨ AI 增强已开启：<b>${esc(st.model)}</b> · 任意中文都能生成　<span class="muted">${esc(ver)}</span></div>`
-    : `<div class="banner">📴 离线语料库模式 · 内置 ${corpus().length} 组说法，贴不上就不硬凑。<a href="#" id="to-settings" style="color:var(--fjord);font-weight:700">接入大模型 →</a>　<span class="muted">${esc(ver)}</span></div>`;
+  let html;
+  if (st.ai) {
+    html = `<div class="banner ok">✨ AI 增强已开启：<b>${esc(st.model)}</b> · 任意中文都能翻译　<span class="muted">${esc(ver)}</span></div>`;
+  } else if (st.incomplete) {
+    html = `<div class="banner warn">⚠️ AI 配置不完整（${esc(st.missing.join('、'))}没填），所以翻译不出来。<a href="#" id="to-settings" style="color:var(--fjord);font-weight:700">去设置补全 →</a>　<span class="muted">${esc(ver)}</span></div>`;
+  } else {
+    html = `<div class="banner">📴 离线语料库模式 · 内置 ${corpus().length} 组说法，贴不上就不硬凑。<a href="#" id="to-settings" style="color:var(--fjord);font-weight:700">接入大模型 →</a>　<span class="muted">${esc(ver)}</span></div>`;
+  }
+  box.innerHTML = html;
   box.querySelector('#to-settings')?.addEventListener('click', (e) => { e.preventDefault(); openSettings(); });
 }
 

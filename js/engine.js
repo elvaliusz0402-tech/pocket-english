@@ -236,16 +236,58 @@ export function localVariants(hit) {
   return hit ? { ...fromLocal(hit), source: 'local' } : null;
 }
 
-/** 当前引擎状态（供界面显示模式徽章） */
+/** 当前引擎状态（供界面显示模式徽章）；incomplete = 已想用 AI 但配置缺项 */
 export async function engineStatus() {
   const c = await llmConfig();
   const ready = !!(c.enabled && c.url && c.key);
+  const missing = [];
+  if (c.enabled) {
+    if (!String(c.url || '').trim()) missing.push('接口地址');
+    if (!String(c.key || '').trim()) missing.push('API Key');
+  }
   return {
     ai: ready,
+    incomplete: !ready && missing.length > 0,
+    missing,
     model: ready ? (c.model || '未填模型名') : '',
     preset: c.preset || 'openai',
     url: ready ? normalizeBaseUrl(c.url) : ''
   };
+}
+
+/** 设置页「测试连接」：先逐项检查配置，再发一次最小的真实请求，把失败原因说清楚 */
+export async function testLLM() {
+  const c = await llmConfig();
+  if (!c.enabled) return { ok: false, msg: '「启用 AI 增强」没有勾选——勾上并填好 API Key 才能翻译。' };
+  if (!String(c.url || '').trim()) return { ok: false, msg: '接口地址为空：请先选服务商（自动带出地址），或手动填写。' };
+  if (!String(c.key || '').trim()) return { ok: false, msg: 'API Key 是空的——这是最常见的原因。请到服务商后台生成 sk-… 密钥，完整粘贴到这里再测试。' };
+  if (!String(c.model || '').trim()) return { ok: false, msg: '模型名为空：请填写如 deepseek-chat、moonshot-v1-8k。' };
+
+  const base = normalizeBaseUrl(c.url);
+  try {
+    const res = await fetch(base + '/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + c.key },
+      body: JSON.stringify({ model: c.model, messages: [{ role: 'user', content: 'Say OK' }], max_tokens: 5, stream: false }),
+      signal: AbortSignal.timeout ? AbortSignal.timeout(30000) : undefined
+    });
+    if (!res.ok) {
+      const t = (await res.text().catch(() => '')).replace(/\s+/g, ' ').slice(0, 140);
+      let msg = '接口返回 HTTP ' + res.status;
+      if (res.status === 401) msg += '：API Key 不对或已失效';
+      else if (res.status === 404) msg += '：地址或模型名不对（应为 ' + base + '/chat/completions）';
+      else if (res.status === 429) msg += '：请求太频繁，或额度/余额不足';
+      else if (res.status >= 500) msg += '：服务商服务端出错，稍后再试';
+      if (t) msg += ' · ' + t;
+      return { ok: false, msg };
+    }
+    const data = await res.json();
+    const text = data?.choices?.[0]?.message?.content || '';
+    if (!text) return { ok: false, msg: '能连上但模型没返回内容，多半是模型名写错（当前：' + c.model + '）' };
+    return { ok: true, msg: '✅ 连接成功：' + c.model + ' 已可用（回复：' + text.slice(0, 20).trim() + '）' };
+  } catch (e) {
+    return { ok: false, msg: '连不上 ' + base + ' —— 网络不通、地址写错，或该服务商不允许网页直连。' };
+  }
 }
 
 function fromLocal(hit) {
