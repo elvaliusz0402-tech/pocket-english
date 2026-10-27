@@ -3,7 +3,7 @@ import { Store, SCENES, sceneName, sceneIcon, uid, newSRS } from './store.js';
 import {
   generateVariants, enrichSentences, cleanText, splitSentences,
   guessScene, toEntry, llmConfig, saveLLMConfig, llmReady, PRESETS, corpus, phrasebook,
-  normalizeBaseUrl, localVariants, engineStatus, testLLM
+  normalizeBaseUrl, localVariants, engineStatus, listModels, testLLM
 } from './engine.js';
 import { buildIndex, searchEntries } from './search.js';
 import { recognize, downscale } from './ocr.js';
@@ -695,8 +695,14 @@ async function openSettings() {
       <input type="checkbox" data-on ${cfg.enabled ? 'checked' : ''} style="width:auto">
       <span>启用 AI 增强</span>
     </label>
-    <div class="btn-row"><button class="btn soft sm" id="s-test">测试连接</button></div>
-    <div class="muted" id="s-test-out" style="margin-top:8px;font-size:13px;line-height:1.6">会先检查配置是否填全，再真实请求一次接口。</div>
+    <div class="btn-row"><button class="btn soft sm" id="s-test">测试连接</button>
+      <button class="btn ghost sm" id="s-models">列出可用模型</button></div>
+    <div class="muted" id="s-test-out" style="margin-top:8px;font-size:13px;line-height:1.6;white-space:pre-line">会先检查配置是否填全，再真实请求一次接口。</div>
+    <div class="muted" style="font-size:12px;line-height:1.7;margin-top:10px">
+      还没有 Key？—— <b>DeepSeek</b>（最便宜，几块钱用很久）：platform.deepseek.com 注册 → 左侧「API Keys」→ 创建 → 复制 sk- 开头的串 → 到「充值」充几块钱；模型填 <b>deepseek-v4-flash</b>。<br>
+      <b>Kimi</b>：platform.moonshot.cn（国内站）或 platform.kimi.ai（国际站）→ 控制台 API Keys → 新建；模型填 <b>kimi-k3</b>（旧的 moonshot-v1-8k 已下线）。<br>
+      Key <b>只显示一次</b>，请立即复制；它等同账号密码，别截图给人。
+    </div>
     <hr class="sep">
     <div class="section-title" style="margin-top:0">数据</div>
     <div class="btn-row">
@@ -715,7 +721,7 @@ async function openSettings() {
   const s = sheet('设置', node);
   const verNode = node.querySelector('#s-ver');
   appVersion().then((v) => {
-    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v7</b><br>
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v8</b><br>
     若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
   });
   const presetSel = node.querySelector('[data-preset]');
@@ -741,6 +747,18 @@ async function openSettings() {
     const r = await testLLM();
     out.textContent = r.msg;
     out.style.color = r.ok ? 'var(--fjord)' : 'var(--rose)';
+  };
+  node.querySelector('#s-models').onclick = async () => {
+    const out = node.querySelector('#s-test-out');
+    out.style.color = '';
+    out.textContent = '正在向服务商查询…';
+    const cfg = { ...collect(), enabled: true };
+    await saveLLMConfig(cfg);
+    urlIn.value = cfg.url;
+    const list = await listModels(cfg.url, cfg.key);
+    out.textContent = list.length
+      ? '你这个 Key 在 ' + normalizeBaseUrl(cfg.url) + ' 下可用：\n' + list.join('\n')
+      : '没查到：接口地址或 Key 不对，换一个服务商或直接手填模型名试试。';
   };
   node.querySelector('#s-export').onclick = async () => {
     const data = JSON.stringify(await Store.all(), null, 2);

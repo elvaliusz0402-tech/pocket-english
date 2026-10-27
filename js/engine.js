@@ -109,10 +109,13 @@ export function guessScene(text, fallback = 'other') {
 /* ---------------- 大模型（可选） ---------------- */
 const LLM_KEY = 'llm-config';
 
+/* 厂商模型换代很快，下面是 2026-10 校验过仍在售的名称。
+   注意：moonshot-v1-8k 已于 2026-08-31 下线、deepseek-chat 于 2026-07-24 退役，填了必报 404。 */
 export const PRESETS = [
-  { id: 'openai', name: 'OpenAI', url: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
-  { id: 'deepseek', name: 'DeepSeek', url: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
-  { id: 'moonshot', name: 'Moonshot / Kimi', url: 'https://api.moonshot.cn/v1', model: 'moonshot-v1-8k' },
+  { id: 'deepseek', name: 'DeepSeek（推荐·最便宜）', url: 'https://api.deepseek.com', model: 'deepseek-v4-flash' },
+  { id: 'moonshot', name: 'Moonshot / Kimi（国内站）', url: 'https://api.moonshot.cn', model: 'kimi-k3' },
+  { id: 'moonshot-intl', name: 'Moonshot / Kimi（国际站）', url: 'https://api.moonshot.ai', model: 'kimi-k3' },
+  { id: 'openai', name: 'OpenAI', url: 'https://api.openai.com', model: 'gpt-5-mini' },
   { id: 'custom', name: '自定义（OpenAI 兼容）', url: '', model: '' }
 ];
 
@@ -255,6 +258,20 @@ export async function engineStatus() {
   };
 }
 
+/** 列出该 Key 在当前地址下可用的模型名（失败返回空数组） */
+export async function listModels(baseRaw, key) {
+  const base = normalizeBaseUrl(baseRaw);
+  try {
+    const res = await fetch(base + '/models', {
+      headers: { Authorization: 'Bearer ' + key },
+      signal: AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined
+    });
+    if (!res.ok) return [];
+    const d = await res.json();
+    return (d.data || []).map((m) => m.id).filter(Boolean);
+  } catch { return []; }
+}
+
 /** 设置页「测试连接」：先逐项检查配置，再发一次最小的真实请求，把失败原因说清楚 */
 export async function testLLM() {
   const c = await llmConfig();
@@ -275,10 +292,13 @@ export async function testLLM() {
       const t = (await res.text().catch(() => '')).replace(/\s+/g, ' ').slice(0, 140);
       let msg = '接口返回 HTTP ' + res.status;
       if (res.status === 401) msg += '：API Key 不对或已失效';
-      else if (res.status === 404) msg += '：地址或模型名不对（应为 ' + base + '/chat/completions）';
+      else if (res.status === 404) msg += '：地址不对，或模型名已下线（旧名如 moonshot-v1-8k、deepseek-chat 都已被厂商停掉）';
       else if (res.status === 429) msg += '：请求太频繁，或额度/余额不足';
       else if (res.status >= 500) msg += '：服务商服务端出错，稍后再试';
       if (t) msg += ' · ' + t;
+      // 顺手查一下这个 Key 实际能用的模型，省得猜
+      const avail = await listModels(base, c.key);
+      if (avail.length) msg += '\n你这个 Key 可用的模型（挑一个填到上面）：' + avail.slice(0, 8).join('、');
       return { ok: false, msg };
     }
     const data = await res.json();
