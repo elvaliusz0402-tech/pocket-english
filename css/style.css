@@ -333,3 +333,19 @@ hr.sep { border: none; border-top: 1px solid var(--line); margin: 16px 0; }
   font-size: 12.5px; color: var(--ink-3); margin-top: 7px;
   padding-left: 9px; border-left: 2px solid var(--line);
 }
+
+/* ===== 常用100句：分组折叠 ===== */
+.pb-group { margin: 0 0 14px; }
+.pb-head {
+  display: flex; align-items: center; gap: 9px;
+  padding: 14px 16px; cursor: pointer; user-select: none;
+  background: var(--grad-soft);
+  border: 1px solid var(--line); border-radius: var(--radius-s);
+  font-size: 15px; color: var(--ink);
+}
+.pb-head b { font-size: 15.5px; }
+.pb-head .pb-ico { font-size: 17px; }
+.pb-head .caret { color: var(--ink-3); font-size: 13px; transition: transform .18s ease; }
+.pb-group.closed .caret { transform: rotate(-90deg); }
+.pb-group.closed .pb-body { display: none; }
+.pb-body { display: grid; gap: 8px; margin-top: 8px; }

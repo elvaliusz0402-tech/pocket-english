@@ -219,19 +219,33 @@ Return JSON: {"variants":[{"en":string,"tone":string,"scene":string,"tip":string
       if (list.length) {
         return { variants: list.slice(0, 3), source: 'ai', matched: null };
       }
-      // 模型返回了但没内容 —— 同样要让用户看得见
-      const err = '大模型返回内容为空，请检查模型名是否正确';
-      if (local) return { ...fromLocal(local), source: 'local', aiError: err };
-      return { variants: [], source: 'none', aiError: err };
+      // 模型返回了但没内容 —— 也不给本地结果冒充翻译，由用户决定
+      return { variants: [], source: 'none', aiError: '大模型返回内容为空，请检查模型名是否正确', localHit: local };
     } catch (e) {
-      // AI 失败必须可见，不能假装是翻译结果
-      if (local) return { ...fromLocal(local), source: 'local', aiError: e.message };
-      return { variants: [], source: 'none', aiError: e.message };
+      // AI 失败绝不拿本地句子冒充翻译结果；把失败原因和可选项一起交回给界面
+      return { variants: [], source: 'none', aiError: e.message, localHit: local };
     }
   }
 
   if (local) return { ...fromLocal(local), source: 'local' };
   return { variants: [], source: 'none' };
+}
+
+/** 把本地命中转成展示结构（供界面在用户明确要求时查看本地近似说法） */
+export function localVariants(hit) {
+  return hit ? { ...fromLocal(hit), source: 'local' } : null;
+}
+
+/** 当前引擎状态（供界面显示模式徽章） */
+export async function engineStatus() {
+  const c = await llmConfig();
+  const ready = !!(c.enabled && c.url && c.key);
+  return {
+    ai: ready,
+    model: ready ? (c.model || '未填模型名') : '',
+    preset: c.preset || 'openai',
+    url: ready ? normalizeBaseUrl(c.url) : ''
+  };
 }
 
 function fromLocal(hit) {

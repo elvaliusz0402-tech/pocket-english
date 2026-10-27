@@ -2,7 +2,8 @@
 import { Store, SCENES, sceneName, sceneIcon, uid, newSRS } from './store.js';
 import {
   generateVariants, enrichSentences, cleanText, splitSentences,
-  guessScene, toEntry, llmConfig, saveLLMConfig, llmReady, PRESETS, corpus, phrasebook, normalizeBaseUrl
+  guessScene, toEntry, llmConfig, saveLLMConfig, llmReady, PRESETS, corpus, phrasebook,
+  normalizeBaseUrl, localVariants, engineStatus
 } from './engine.js';
 import { buildIndex, searchEntries } from './search.js';
 import { recognize, downscale } from './ocr.js';
@@ -20,7 +21,8 @@ const state = {
  ocrSents: [],
   ocrCards: [],
   pbCat: 'all',
-  pbQ: ''
+  pbQ: '',
+  pbOpen: {}   // 常用句分组折叠状态 { catId: bool }
 };
 
 /* ============ 数据 ============ */
@@ -71,6 +73,34 @@ function pbAll() {
   return PB_IDX;
 }
 
+function pbRow(x, savedEn) {
+  const saved = savedEn.has(x.en);
+  const n = el(`<div class="entry pb">
+      <div class="en">${esc(x.en)}</div>
+      <div class="cn">${esc(x.cn)}</div>
+      ${x.note ? `<div class="tip">💡 ${esc(x.note)}</div>` : ''}
+      <div class="meta">
+        <span class="chip mini scene">${sceneIcon(x.scene)} ${sceneName(x.scene)}</span>
+        <span class="chip mini src">${esc(x.cat)}</span>
+        <span style="flex:1"></span>
+        <button class="btn sm ghost" data-speak>🔊</button>
+        <button class="btn sm ghost" data-copy>复制</button>
+        <button class="btn sm ${saved ? 'soft' : ''}" data-save ${saved ? 'disabled' : ''}>${saved ? '已入库' : '★ 收藏'}</button>
+      </div>
+    </div>`);
+  n.querySelector('[data-speak]').onclick = () => speak(x.en);
+  n.querySelector('[data-copy]').onclick = () => copy(`${x.en}（${x.cn}）`);
+  n.querySelector('[data-save]').onclick = async () => {
+    const e = toEntry({ en: x.en, scene: x.scene, tip: x.note, natural: '' }, x.cn, 'phrasebook', { sourceNote: x.cat });
+    await Store.put(e);
+    await load();
+    updateSub();
+    renderPhrases();
+    toast('已收进表达库，可去练习页复习');
+  };
+  return n;
+}
+
 function renderPhrases() {
   const cats = window.PHRASEBOOK || [];
   const box = document.getElementById('pb-cats');
@@ -84,48 +114,52 @@ function renderPhrases() {
   cats.forEach((cat) => box.appendChild(mk(cat.id, `${cat.icon} ${cat.name}`)));
 
   const all = pbAll();
-  let list = all.filter((x) => state.pbCat === 'all' || cats.find((c) => c.id === state.pbCat)?.name === x.cat);
-  if (state.pbQ.trim()) {
-    list = searchEntries(list, state.pbQ).map((r) => r.e);
-  }
-
-  document.getElementById('pb-count').textContent = state.pbQ.trim()
-    ? `匹配到 ${list.length} 句`
-    : `共 ${list.length} 句 · 点★即可收进表达库一起练习`;
-
+  const searching = !!state.pbQ.trim();
   const wrap = document.getElementById('pb-list');
+  const savedEn = new Set(state.entries.map((e) => e.en));
   wrap.innerHTML = '';
-  if (!list.length) {
-    wrap.innerHTML = `<div class="empty"><span class="big">🔎</span>没找到，换个关键词试试<br><span class="muted">支持中文意思、英文单词、场景名</span></div>`;
+
+  /* —— 搜索或选中某一类：平铺结果 —— */
+  if (searching || state.pbCat !== 'all') {
+    let list = all.filter((x) => state.pbCat === 'all' || cats.find((c) => c.id === state.pbCat)?.name === x.cat);
+    if (searching) list = searchEntries(list, state.pbQ).map((r) => r.e);
+    document.getElementById('pb-count').textContent = searching
+      ? `匹配到 ${list.length} 句`
+      : `${cats.find((c) => c.id === state.pbCat)?.name || ''} · 共 ${list.length} 句 · 点★即可收进表达库`;
+    if (!list.length) {
+      wrap.innerHTML = `<div class="empty"><span class="big">🔎</span>没找到，换个关键词试试<br><span class="muted">支持中文意思、英文单词、场景名</span></div>`;
+      return;
+    }
+    list.forEach((x) => wrap.appendChild(pbRow(x, savedEn)));
     return;
   }
-  const savedEn = new Set(state.entries.map((e) => e.en));
-  list.forEach((x) => {
-    const saved = savedEn.has(x.en);
-    const n = el(`<div class="entry pb">
-      <div class="en">${esc(x.en)}</div>
-      <div class="cn">${esc(x.cn)}</div>
-      ${x.note ? `<div class="tip">💡 ${esc(x.note)}</div>` : ''}
-      <div class="meta">
-        <span class="chip mini scene">${sceneIcon(x.scene)} ${sceneName(x.scene)}</span>
-        <span class="chip mini src">${esc(x.cat)}</span>
+
+  /* —— 默认浏览：按类别分组，全部展开，可逐组折叠 —— */
+  const openCount = cats.filter((c) => state.pbOpen[c.id] !== false).length;
+  document.getElementById('pb-count').innerHTML =
+    `共 ${all.length} 句 · ${openCount}/${cats.length} 组展开 · 点组标题可折叠，点★收藏`;
+
+  cats.forEach((cat) => {
+    const items = all.filter((x) => x.cat === cat.name);
+    if (!items.length) return;
+    const open = state.pbOpen[cat.id] !== false;
+    const g = el(`<div class="pb-group ${open ? '' : 'closed'}">
+      <header class="pb-head">
+        <span class="caret">▾</span>
+        <span class="pb-ico">${cat.icon}</span>
+        <b>${esc(cat.name)}</b>
+        <span class="muted">${items.length} 句</span>
         <span style="flex:1"></span>
-        <button class="btn sm ghost" data-speak>🔊</button>
-        <button class="btn sm ghost" data-copy>复制</button>
-        <button class="btn sm ${saved ? 'soft' : ''}" data-save ${saved ? 'disabled' : ''}>${saved ? '已入库' : '★ 收藏'}</button>
-      </div>
+      </header>
+      <div class="pb-body"></div>
     </div>`);
-    n.querySelector('[data-speak]').onclick = () => speak(x.en);
-    n.querySelector('[data-copy]').onclick = () => copy(`${x.en}（${x.cn}）`);
-    n.querySelector('[data-save]').onclick = async () => {
-      const e = toEntry({ en: x.en, scene: x.scene, tip: x.note, natural: '' }, x.cn, 'phrasebook', { sourceNote: x.cat });
-      await Store.put(e);
-      await load();
-      updateSub();
+    const body = g.querySelector('.pb-body');
+    items.forEach((x) => body.appendChild(pbRow(x, savedEn)));
+    g.querySelector('.pb-head').onclick = () => {
+      state.pbOpen[cat.id] = !open;   // 折叠 ↔ 展开
       renderPhrases();
-      toast('已收进表达库，可去练习页复习');
     };
-    wrap.appendChild(n);
+    wrap.appendChild(g);
   });
 }
 
@@ -164,10 +198,27 @@ async function onGenerate() {
 }
 
 function renderVariants(out, cn, res) {
+  /* AI 已配置但失败：绝不拿本地句子冒充翻译。给出原因 + 用户自己选 */
+  if (!res.variants.length && res.aiError) {
+    out.innerHTML = `<div class="card">
+      <div class="banner warn">⚠️ 大模型没能用上，本次没有生成翻译<br>
+        <span class="muted">${esc(String(res.aiError).slice(0, 200))}</span></div>
+      <div class="muted" style="font-size:13px;line-height:1.6">常见原因：接口地址不对（应如 <b>https://api.deepseek.com</b>，程序会自动补 <b>/v1</b>）、Key 失效、模型名写错、或该服务商不允许网页直连。<br>
+      去「⚙️ 设置 → 测试连接」可以直接定位。</div>
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn sm" id="cap-retry">重试</button>
+        ${res.localHit ? `<button class="btn sm ghost" id="cap-local">看本地近似说法</button>` : ''}
+        <button class="btn sm ghost" id="cap-manual">手动添加</button>
+      </div>
+    </div>`;
+    out.querySelector('#cap-retry').onclick = onGenerate;
+    out.querySelector('#cap-manual').onclick = () => openEditor(null, { cn });
+    const lv = res.localHit ? localVariants(res.localHit) : null;
+    if (lv) out.querySelector('#cap-local').onclick = () => renderVariants(out, cn, { ...lv, aiError: res.aiError });
+    return;
+  }
   if (!res.variants.length) {
     out.innerHTML = `<div class="card">
-      ${res.aiError ? `<div class="banner warn">⚠️ 大模型没能用上：${esc(String(res.aiError).slice(0, 160))}<br>
-        <span class="muted">去「⚙️ 设置 → 测试连接」能定位问题；地址应为 https://api.deepseek.com/v1 这类形式。</span></div>` : ''}
       <div class="empty"><span class="big">🤔</span>本地语料库里没有贴切的说法，<b>宁可不给你也不给错的</b>。<br>
       换个更短的说法试试，或在设置里接入大模型来生成任意中文。</div>
       <div class="btn-row"><button class="btn ghost sm" id="cap-manual">手动添加这条</button></div>
@@ -655,10 +706,18 @@ async function openSettings() {
       <button class="btn ghost sm" id="s-clear" style="color:var(--rose)">清空全部</button>
     </div>
     <div class="muted" style="margin-top:10px">共 ${st.total} 条。数据只存在这台设备的浏览器里。</div>
+    <hr class="sep">
+    <div class="section-title" style="margin-top:0">关于</div>
+    <div class="muted" id="s-ver" style="font-size:13px;line-height:1.6">正在读取版本…</div>
     <div class="btn-row" style="margin-top:14px"><button class="btn close-sheet" style="flex:1">完成</button></div>
   </div>`);
 
   const s = sheet('设置', node);
+  const verNode = node.querySelector('#s-ver');
+  appVersion().then((v) => {
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v6</b><br>
+    若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
+  });
   const presetSel = node.querySelector('[data-preset]');
   const urlIn = node.querySelector('[data-url]');
   const modelIn = node.querySelector('[data-model]');
@@ -729,12 +788,20 @@ async function openSettings() {
   };
 }
 
+async function appVersion() {
+  try {
+    const keys = await caches.keys();
+    return keys.find((k) => k.startsWith('pe-')) || '未缓存';
+  } catch { return '未知'; }
+}
+
 async function renderBanner() {
   const box = document.getElementById('llm-banner');
-  const ai = await llmReady();
-  box.innerHTML = ai
-    ? `<div class="banner">✨ AI 增强已开启：任意中文都能生成地道说法</div>`
-    : `<div class="banner">离线可用：内置本地语料库。<a href="#" id="to-settings" style="color:var(--fjord);font-weight:700">接入大模型 →</a></div>`;
+  const st = await engineStatus();
+  const ver = await appVersion();
+  box.innerHTML = st.ai
+    ? `<div class="banner ok">✨ AI 增强已开启：<b>${esc(st.model)}</b> · 任意中文都能生成　<span class="muted">${esc(ver)}</span></div>`
+    : `<div class="banner">📴 离线语料库模式 · 内置 ${corpus().length} 组说法，贴不上就不硬凑。<a href="#" id="to-settings" style="color:var(--fjord);font-weight:700">接入大模型 →</a>　<span class="muted">${esc(ver)}</span></div>`;
   box.querySelector('#to-settings')?.addEventListener('click', (e) => { e.preventDefault(); openSettings(); });
 }
 
