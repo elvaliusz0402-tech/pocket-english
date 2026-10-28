@@ -112,10 +112,15 @@ const LLM_KEY = 'llm-config';
 /* 厂商模型换代很快，下面是 2026-10 校验过仍在售的名称。
    注意：moonshot-v1-8k 已于 2026-08-31 下线、deepseek-chat 于 2026-07-24 退役，填了必报 404。 */
 export const PRESETS = [
-  { id: 'deepseek', name: 'DeepSeek（推荐·最便宜）', url: 'https://api.deepseek.com', model: 'deepseek-v4-flash' },
-  { id: 'moonshot', name: 'Moonshot / Kimi（国内站）', url: 'https://api.moonshot.cn', model: 'kimi-k3' },
-  { id: 'moonshot-intl', name: 'Moonshot / Kimi（国际站）', url: 'https://api.moonshot.ai', model: 'kimi-k3' },
-  { id: 'openai', name: 'OpenAI', url: 'https://api.openai.com', model: 'gpt-5-mini' },
+  // —— 免费档（无需信用卡，有速率限制，个人日常够用）——
+  { id: 'gemini', free: true, name: '🆓 Google Gemini（免费·推荐）', url: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.5-flash' },
+  { id: 'siliconflow', free: true, name: '🆓 硅基流动 SiliconFlow（免费·国内直连）', url: 'https://api.siliconflow.cn/v1', model: 'THUDM/glm-4-9b-chat' },
+  { id: 'openrouter', free: true, name: '🆓 OpenRouter 免费模型池', url: 'https://openrouter.ai/api/v1', model: 'openrouter/free' },
+  // —— 付费档（便宜，量大稳定）——
+  { id: 'deepseek', name: '💰 DeepSeek（付费·最便宜）', url: 'https://api.deepseek.com', model: 'deepseek-v4-flash' },
+  { id: 'moonshot', name: '💰 Moonshot / Kimi（国内站）', url: 'https://api.moonshot.cn', model: 'kimi-k3' },
+  { id: 'moonshot-intl', name: '💰 Moonshot / Kimi（国际站）', url: 'https://api.moonshot.ai', model: 'kimi-k3' },
+  { id: 'openai', name: '💰 OpenAI', url: 'https://api.openai.com', model: 'gpt-5-mini' },
   { id: 'custom', name: '自定义（OpenAI 兼容）', url: '', model: '' }
 ];
 
@@ -134,7 +139,8 @@ export function normalizeBaseUrl(raw) {
   let u = String(raw || '').trim().replace(/\/+$/, '');
   if (!u) return '';
   if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
-  if (/\/v\d+[a-z-]*$/i.test(u)) return u;         // 已带版本号
+  if (/\/v\d+[a-z-]*$/i.test(u)) return u;         // 已带版本号（/v1、/v1beta…）
+  if (/\/openai$/i.test(u)) return u;              // Gemini 兼容端点 …/v1beta/openai
   if (/\/chat\/completions$/i.test(u)) return u.replace(/\/chat\/completions$/i, '');
   return u + '/v1';                                 // 其余一律补 /v1
 }
