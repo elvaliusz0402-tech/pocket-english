@@ -114,7 +114,7 @@ const LLM_KEY = 'llm-config';
 export const PRESETS = [
   // —— 免费档（无需信用卡，有速率限制，个人日常够用）——
   { id: 'gemini', free: true, name: '🆓 Google Gemini（免费·推荐）', url: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.5-flash' },
-  { id: 'siliconflow', free: true, name: '🆓 硅基流动 SiliconFlow（免费·国内直连）', url: 'https://api.siliconflow.cn/v1', model: 'THUDM/glm-4-9b-chat' },
+  { id: 'siliconflow', free: true, name: '🆓 硅基流动 SiliconFlow（免费·国内直连）', url: 'https://api.siliconflow.cn/v1', model: 'Qwen/Qwen3-8B' },
   { id: 'openrouter', free: true, name: '🆓 OpenRouter 免费模型池', url: 'https://openrouter.ai/api/v1', model: 'openrouter/free' },
   // —— 付费档（便宜，量大稳定）——
   { id: 'deepseek', name: '💰 DeepSeek（付费·最便宜）', url: 'https://api.deepseek.com', model: 'deepseek-v4-flash' },

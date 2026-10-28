@@ -701,7 +701,7 @@ async function openSettings() {
     <div class="banner ok" style="margin-top:10px">🆓 <b>有三个免费档可以不花钱用</b>（有每日/每分钟次数限制，个人日常翻译完全够）。详见下方说明。</div>
     <div class="muted" style="font-size:12px;line-height:1.7;margin-top:10px">
       <b>① Google Gemini（推荐·最省事，有 Gmail 就行）</b>：打开 aistudio.google.com → 用 Google 账号登录 → 左侧「Get API key」→ Create API key → 复制 AIza 开头的串。不用信用卡、不用充值。选「Google Gemini（免费）」预设即可。<span style="color:var(--rose)">注意：Google 的服务在中国大陆直连不通，需要在非大陆网络下使用。</span><br>
-      <b>② 硅基流动 SiliconFlow（免费·主打大陆直连）</b>：cloud.siliconflow.cn 手机号注册 → 左侧「API 密钥」→ 新建 → 复制；模型选 THUDM/glm-4-9b-chat、Qwen/Qwen3-8B 等<b>长期免费</b>款。<br>
+      <b>② 硅基流动 SiliconFlow（免费·主打大陆直连）</b>：cloud.siliconflow.cn 手机号注册 + 个人实名（姓名+身份证号，不传证件照）→ 左侧「账户管理 → API 密钥」→ 新建 API 密钥 → 复制。模型填 <b>Qwen/Qwen3-8B</b>（实测余额 0 也能调，长期免费；备选 THUDM/GLM-4-9B-0414）。<br>
       <b>③ OpenRouter 免费模型池</b>：openrouter.ai 注册 → Keys → Create Key；模型填 openrouter/free（自动挑当前可用的免费模型）。<b>免费额度约每天 50 次</b>，超了要等次日。<br>
       <b>④ 付费但很便宜</b>：DeepSeek platform.deepseek.com（模型 deepseek-v4-flash，充 10 元用很久）、Kimi platform.moonshot.cn / platform.kimi.ai（模型 kimi-k3）。<br>
       不确定自己能用哪些模型？点上面「<b>列出可用模型</b>」直接查。<br>
@@ -724,7 +724,7 @@ async function openSettings() {
   const s = sheet('设置', node);
   const verNode = node.querySelector('#s-ver');
   appVersion().then((v) => {
-    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v9</b><br>
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v10</b><br>
     若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
   });
   const presetSel = node.querySelector('[data-preset]');
