@@ -707,7 +707,7 @@ async function openSettings() {
       <select data-bpreset>${PRESETS.map((p) => `<option value="${p.id}" ${bak.preset === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}</select></label>
     <label class="field"><span>接口地址</span><input type="text" data-burl value="${esc(bak.url)}" placeholder="https://…/v1"></label>
     <label class="field"><span>备用 API Key</span><input type="password" data-bkey value="${esc(bak.key)}" placeholder="sk-…"></label>
-    <label class="field"><span>模型</span><input type="text" data-bmodel value="${esc(bak.model)}" placeholder="Qwen/Qwen3-8B"></label>
+    <label class="field"><span>模型</span><input type="text" data-bmodel value="${esc(bak.model)}" placeholder="THUDM/GLM-4-9B-0414"></label>
     <label class="row" style="margin-bottom:12px">
       <input type="checkbox" data-bon ${bak.enabled === false ? '' : 'checked'} style="width:auto">
       <span>启用备用通道</span>
@@ -719,7 +719,7 @@ async function openSettings() {
     <div class="muted" style="font-size:12px;line-height:1.7;margin-top:10px">
       <b>推荐组合：主用 Gemini（质量最好）+ 备用 硅基流动（国内直连）</b> —— 出了大陆网自动切备用，两边都不耽误。<br>
       <b>① Google Gemini（推荐·最省事，有 Gmail 就行）</b>：打开 aistudio.google.com → 用 Google 账号登录 → 左侧「Get API key」→ Create API key → 复制 AIza 开头的串。不用信用卡、不用充值。选「Google Gemini（免费）」预设即可。<span style="color:var(--rose)">注意：Google 的服务在中国大陆直连不通，需要在非大陆网络下使用。</span><br>
-      <b>② 硅基流动 SiliconFlow（免费·主打大陆直连）</b>：cloud.siliconflow.cn 手机号注册 + 个人实名（姓名+身份证号，不传证件照）→ 左侧「账户管理 → API 密钥」→ 新建 API 密钥 → 复制。模型填 <b>Qwen/Qwen3-8B</b>（实测余额 0 也能调，长期免费；备选 THUDM/GLM-4-9B-0414）。<br>
+      <b>② 硅基流动 SiliconFlow（免费·主打大陆直连）</b>：cloud.siliconflow.cn 手机号注册 + 个人实名（姓名+身份证号，不传证件照）→ 左侧「账户管理 → API 密钥」→ 新建 API 密钥 → 复制。模型填 <b>THUDM/GLM-4-9B-0414</b>（实测约 3 秒出结果，余额 0 也能调，长期免费；同账号下 Qwen/Qwen3-8B 也可用，但默认开推理、要 20 秒左右）。<br>
       <b>③ OpenRouter 免费模型池</b>：openrouter.ai 注册 → Keys → Create Key；模型填 openrouter/free（自动挑当前可用的免费模型）。<b>免费额度约每天 50 次</b>，超了要等次日。<br>
       <b>④ 付费但很便宜</b>：DeepSeek platform.deepseek.com（模型 deepseek-v4-flash，充 10 元用很久）、Kimi platform.moonshot.cn / platform.kimi.ai（模型 kimi-k3）。<br>
       不确定自己能用哪些模型？点上面「<b>列出可用模型</b>」直接查。<br>
@@ -742,7 +742,7 @@ async function openSettings() {
   const s = sheet('设置', node);
   const verNode = node.querySelector('#s-ver');
   appVersion().then((v) => {
-    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v12</b><br>
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v13</b><br>
     若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
   });
   const presetSel = node.querySelector('[data-preset]');
@@ -770,7 +770,7 @@ async function openSettings() {
     preset: bPresetSel.value,
     url: normalizeBaseUrl(bUrlIn.value),
     key: node.querySelector('[data-bkey]').value.trim(),
-    model: bModelIn.value.trim() || (PRESETS.find((p) => p.id === bPresetSel.value)?.model || 'Qwen/Qwen3-8B'),
+    model: bModelIn.value.trim() || (PRESETS.find((p) => p.id === bPresetSel.value)?.model || 'THUDM/GLM-4-9B-0414'),
     enabled: node.querySelector('[data-bon]').checked
   });
   node.querySelector('#s-test').onclick = async () => {

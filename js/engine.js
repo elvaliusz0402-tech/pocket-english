@@ -117,7 +117,8 @@ const COOLDOWN = 10 * 60 * 1000;       // 某通道失败后 10 分钟内先走�
 export const PRESETS = [
   // —— 免费档（无需信用卡，有速率限制，个人日常够用）——
   { id: 'gemini', free: true, name: '🆓 Google Gemini（免费·质量最好）', url: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.5-flash' },
-  { id: 'siliconflow', free: true, name: '🆓 硅基流动 SiliconFlow（免费·国内直连）', url: 'https://api.siliconflow.cn/v1', model: 'Qwen/Qwen3-8B' },
+  // 实测 2026-10-29：GLM-4-9B-0414 约 3 秒出结果，Qwen3-8B 约 21 秒（它默认开推理），故默认用前者
+  { id: 'siliconflow', free: true, name: '🆓 硅基流动 SiliconFlow（免费·国内直连）', url: 'https://api.siliconflow.cn/v1', model: 'THUDM/GLM-4-9B-0414' },
   { id: 'openrouter', free: true, name: '🆓 OpenRouter 免费模型池', url: 'https://openrouter.ai/api/v1', model: 'openrouter/free' },
   // —— 付费档（便宜，量大稳定）——
   { id: 'deepseek', name: '💰 DeepSeek（付费·最便宜）', url: 'https://api.deepseek.com', model: 'deepseek-v4-flash' },
@@ -130,7 +131,7 @@ export const PRESETS = [
 /* 默认备用 = 硅基流动（国内直连，Gemini 在大陆连不上时顶上） */
 const DEFAULT_BAK = {
   enabled: true, preset: 'siliconflow',
-  url: 'https://api.siliconflow.cn/v1', key: '', model: 'Qwen/Qwen3-8B'
+  url: 'https://api.siliconflow.cn/v1', key: '', model: 'THUDM/GLM-4-9B-0414'
 };
 
 export async function llmConfig() {
@@ -249,7 +250,11 @@ export async function chatAuto(messages, opts = {}) {
   const errors = [];
   for (const [which, cfg] of order) {
     try {
-      const data = await chatWith(cfg, messages, opts);
+      // 有退路时主用只等 18 秒就换人，别让用户干等；没退路才等满 45 秒
+      const timeout = (which === 'primary' && bOk && order.length > 1)
+        ? Math.min(opts.timeout || 18000, 18000)
+        : (opts.timeout || 45000);
+      const data = await chatWith(cfg, messages, { ...opts, timeout });
       await clearFail(which);
       return {
         ok: true, data, provider: which, label: providerLabel(cfg), errors,
