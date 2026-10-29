@@ -107,13 +107,16 @@ export function guessScene(text, fallback = 'other') {
 }
 
 /* ---------------- 大模型（可选） ---------------- */
-const LLM_KEY = 'llm-config';
+const LLM_KEY = 'llm-config';          // 主用服务商
+const LLM_BAK_KEY = 'llm-config-bak';  // 备用服务商（主用连不上时自动切换）
+const HEALTH_KEY = 'llm-health';       // 各通道最近一次失败时间
+const COOLDOWN = 10 * 60 * 1000;       // 某通道失败后 10 分钟内先走另一条，不再干等超时
 
 /* 厂商模型换代很快，下面是 2026-10 校验过仍在售的名称。
    注意：moonshot-v1-8k 已于 2026-08-31 下线、deepseek-chat 于 2026-07-24 退役，填了必报 404。 */
 export const PRESETS = [
   // —— 免费档（无需信用卡，有速率限制，个人日常够用）——
-  { id: 'gemini', free: true, name: '🆓 Google Gemini（免费·推荐）', url: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.5-flash' },
+  { id: 'gemini', free: true, name: '🆓 Google Gemini（免费·质量最好）', url: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.5-flash' },
   { id: 'siliconflow', free: true, name: '🆓 硅基流动 SiliconFlow（免费·国内直连）', url: 'https://api.siliconflow.cn/v1', model: 'Qwen/Qwen3-8B' },
   { id: 'openrouter', free: true, name: '🆓 OpenRouter 免费模型池', url: 'https://openrouter.ai/api/v1', model: 'openrouter/free' },
   // —— 付费档（便宜，量大稳定）——
@@ -124,14 +127,45 @@ export const PRESETS = [
   { id: 'custom', name: '自定义（OpenAI 兼容）', url: '', model: '' }
 ];
 
+/* 默认备用 = 硅基流动（国内直连，Gemini 在大陆连不上时顶上） */
+const DEFAULT_BAK = {
+  enabled: true, preset: 'siliconflow',
+  url: 'https://api.siliconflow.cn/v1', key: '', model: 'Qwen/Qwen3-8B'
+};
+
 export async function llmConfig() {
-  const c = (await Store.getKV(LLM_KEY, null)) || { enabled: false, url: '', key: '', model: '', preset: 'openai' };
+  const c = (await Store.getKV(LLM_KEY, null)) || { enabled: false, url: '', key: '', model: '', preset: 'gemini' };
   return c;
 }
+export async function backupConfig() {
+  const c = await Store.getKV(LLM_BAK_KEY, null);
+  return c || { ...DEFAULT_BAK };
+}
 export async function saveLLMConfig(cfg) { await Store.setKV(LLM_KEY, cfg); }
+export async function saveBackupConfig(cfg) { await Store.setKV(LLM_BAK_KEY, cfg); }
+
+/** 这个通道是否真的可用（启用 + 地址 + Key 都齐） */
+const usable = (c) => !!(c && c.enabled && String(c.url || '').trim() && String(c.key || '').trim());
+
 export async function llmReady() {
-  const c = await llmConfig();
-  return !!(c.enabled && c.url && c.key);
+  const [a, b] = [await llmConfig(), await backupConfig()];
+  return usable(a) || usable(b);
+}
+
+/** 通道健康度：失败过就记一笔，冷却期内先让位给另一条通道 */
+async function health() { return (await Store.getKV(HEALTH_KEY, null)) || {}; }
+async function markFail(which) {
+  const h = await health(); h[which] = Date.now(); await Store.setKV(HEALTH_KEY, h);
+}
+async function clearFail(which) {
+  const h = await health(); delete h[which]; await Store.setKV(HEALTH_KEY, h);
+}
+
+/** 通道显示名（去掉免费/付费前缀，界面更好读） */
+export function providerLabel(c) {
+  const p = PRESETS.find((x) => x.id === (c && c.preset));
+  if (p) return p.name.replace(/^[🆓💰]\s*/, '').trim();
+  try { return new URL(normalizeBaseUrl(c && c.url)).hostname; } catch { return '自定义'; }
 }
 
 /** 纠正常见的接口地址填写错误：api.deepseek.com → api.deepseek.com/v1 */
@@ -145,37 +179,39 @@ export function normalizeBaseUrl(raw) {
   return u + '/v1';                                 // 其余一律补 /v1
 }
 
-async function chat(messages, { json = true, temperature = 0.3 } = {}) {
-  const c = await llmConfig();
-  if (!(c.enabled && c.url && c.key)) throw new Error('未配置大模型');
+/** 用指定配置发一次请求（主用/备用共用） */
+async function chatWith(cfg, messages, { json = true, temperature = 0.3, timeout = 45000 } = {}) {
+  if (!usable(cfg)) throw new Error('未配置');
+  const model = String(cfg.model || '').trim() || (PRESETS.find((p) => p.id === cfg.preset)?.model || '');
   const makeBody = (useJson) => {
-    const body = { model: c.model, messages, temperature, stream: false };
+    const body = { model, messages, temperature, stream: false };
     if (useJson && json) body.response_format = { type: 'json_object' };
     return JSON.stringify(body);
   };
-  const base = normalizeBaseUrl(c.url);
+  const base = normalizeBaseUrl(cfg.url);
   const send = (useJson) => fetch(base + '/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + c.key },
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + cfg.key },
     body: makeBody(useJson),
-    signal: AbortSignal.timeout ? AbortSignal.timeout(45000) : undefined
+    signal: AbortSignal.timeout ? AbortSignal.timeout(timeout) : undefined
   });
   let res;
   try {
     res = await send(true);
   } catch (e) {
     // fetch 直接失败 = 网络不通 / 被浏览器拦截，多半是跨域或地址写错
-    throw new Error('连不上 ' + base + '（可能是地址写错，或该服务商不允许网页直连，需走代理）');
+    throw new Error('连不上（网络不通或该服务商不允许网页直连）');
   }
   // 部分服务商/模型不支持 JSON 模式，降级重试
   if (res.status === 400 || res.status === 422) res = await send(false);
   if (!res.ok) {
     const t = await res.text().catch(() => '');
-    let msg = '接口返回 ' + res.status;
+    let msg = 'HTTP ' + res.status;
     if (res.status === 401) msg = 'API Key 不对或已失效（401）';
-    else if (res.status === 404) msg = '接口地址不对（404），应为 ' + base + '/chat/completions';
+    else if (res.status === 404) msg = '地址或模型名不对（404）';
     else if (res.status === 429) msg = '请求太频繁或额度用完（429）';
-    if (t) msg += ' · ' + t.slice(0, 120);
+    else if (res.status >= 500) msg = '服务商服务端出错（' + res.status + '）';
+    if (t) msg += ' · ' + t.slice(0, 100);
     throw new Error(msg);
   }
   const data = await res.json();
@@ -189,6 +225,60 @@ async function chat(messages, { json = true, temperature = 0.3 } = {}) {
     if (!m) throw new Error('模型返回不是合法 JSON');
     return JSON.parse(m[0]);
   }
+}
+
+/**
+ * 自动回退：先主用（默认 Gemini），失败自动切备用（默认硅基流动）。
+ * 冷却期内直接先走另一条，避免每句都干等超时。
+ * 返回 { ok, data, provider:'primary'|'backup', label, errors }
+ */
+export async function chatAuto(messages, opts = {}) {
+  const [primary, backup, h] = [await llmConfig(), await backupConfig(), await health()];
+  const pOk = usable(primary), bOk = usable(backup);
+  if (!pOk && !bOk) return { ok: false, errors: [] };
+
+  const cooling = (w) => h[w] && Date.now() - h[w] < COOLDOWN;
+  const order = [];
+  if (pOk && !cooling('primary')) order.push(['primary', primary]);
+  if (bOk && !cooling('backup')) order.push(['backup', backup]);
+  if (pOk && cooling('primary')) order.push(['primary', primary]);   // 冷却中的留作最后兜底
+  if (bOk && cooling('backup')) order.push(['backup', backup]);
+  if (!order.length) { if (pOk) order.push(['primary', primary]); if (bOk) order.push(['backup', backup]); }
+
+  const errors = [];
+  for (const [which, cfg] of order) {
+    try {
+      const data = await chatWith(cfg, messages, opts);
+      await clearFail(which);
+      return {
+        ok: true, data, provider: which, label: providerLabel(cfg), errors,
+        fellFrom: which === 'backup' ? providerLabel(primary) : ''
+      };
+    } catch (e) {
+      errors.push({
+        provider: which,
+        label: providerLabel(cfg),
+        msg: String((e && e.message) || e).slice(0, 150)
+      });
+      await markFail(which);
+    }
+  }
+  return { ok: false, errors };
+}
+
+/** 把两条通道的失败原因拼成一句人话 */
+export function formatProviderErrors(errors) {
+  if (!errors || !errors.length) return '大模型调用失败';
+  return errors
+    .map((e) => `${e.provider === 'primary' ? '主用' : '备用'}「${e.label}」失败：${e.msg}`)
+    .join('　｜　');
+}
+
+/** 保留旧名字，兼容其它调用处 */
+async function chat(messages, opts) {
+  const r = await chatAuto(messages, opts);
+  if (!r.ok) throw new Error(formatProviderErrors(r.errors));
+  return r.data;
 }
 
 const SYS_COACH = `You are a native-level English coach for an advanced Chinese learner.
@@ -206,12 +296,11 @@ export async function generateVariants(cn, sceneHint = '') {
   const local = hits.length ? hits[0] : null;
 
   if (await llmReady()) {
-    try {
-      const data = await chat([
-        { role: 'system', content: SYS_COACH },
-        {
-          role: 'user',
-          content: `Chinese input (this is the ONLY source of meaning):
+    const r = await chatAuto([
+      { role: 'system', content: SYS_COACH },
+      {
+        role: 'user',
+        content: `Chinese input (this is the ONLY source of meaning):
 """${cn}"""${sceneHint ? `\nScenario hint: ${sceneHint}` : ''}
 
 Return JSON: {"variants":[{"en":string,"tone":string,"scene":string,"tip":string,"example":string,"back":string}]}
@@ -222,18 +311,24 @@ Return JSON: {"variants":[{"en":string,"tone":string,"scene":string,"tip":string
 - "tone" in Chinese, 2-4 chars (e.g. 随意, 礼貌, 正式, 委婉, 地道, 直接).
 - "tip" in Chinese, ONE sentence, max 40 chars, about register/vocabulary/pragmatics — the thing a textbook never tells you.
 - "example": a short natural dialogue line showing usage (English).`
-        }
-      ], { json: true });
-      const list = (data.variants || []).filter((v) => v && v.en);
+      }
+    ], { json: true });
+
+    if (r.ok) {
+      const list = (r.data.variants || []).filter((v) => v && v.en);
       if (list.length) {
-        return { variants: list.slice(0, 3), source: 'ai', matched: null };
+        return {
+          variants: list.slice(0, 3), source: 'ai', matched: null,
+          provider: r.label,                 // 实际出结果的服务商名
+          viaBackup: r.provider === 'backup', // 是不是走了备用通道
+          fellFrom: r.fellFrom || ''          // 从哪家退回来的
+        };
       }
       // 模型返回了但没内容 —— 也不给本地结果冒充翻译，由用户决定
-      return { variants: [], source: 'none', aiError: '大模型返回内容为空，请检查模型名是否正确', localHit: local };
-    } catch (e) {
-      // AI 失败绝不拿本地句子冒充翻译结果；把失败原因和可选项一起交回给界面
-      return { variants: [], source: 'none', aiError: e.message, localHit: local };
+      return { variants: [], source: 'none', aiError: `「${r.label}」返回内容为空，请检查模型名是否正确`, localHit: local };
     }
+    // AI 失败绝不拿本地句子冒充翻译结果；把失败原因和可选项一起交回给界面
+    return { variants: [], source: 'none', aiError: formatProviderErrors(r.errors), localHit: local };
   }
 
   if (local) return { ...fromLocal(local), source: 'local' };
@@ -248,19 +343,28 @@ export function localVariants(hit) {
 /** 当前引擎状态（供界面显示模式徽章）；incomplete = 已想用 AI 但配置缺项 */
 export async function engineStatus() {
   const c = await llmConfig();
-  const ready = !!(c.enabled && c.url && c.key);
+  const b = await backupConfig();
+  const h = await health();
+  const ready = usable(c);
+  const bakReady = usable(b);
   const missing = [];
   if (c.enabled) {
     if (!String(c.url || '').trim()) missing.push('接口地址');
     if (!String(c.key || '').trim()) missing.push('API Key');
   }
+  const down = (w) => !!(h[w] && Date.now() - h[w] < COOLDOWN);
   return {
     ai: ready,
-    incomplete: !ready && missing.length > 0,
+    incomplete: !ready && !bakReady && missing.length > 0,
     missing,
     model: ready ? (c.model || '未填模型名') : '',
-    preset: c.preset || 'openai',
-    url: ready ? normalizeBaseUrl(c.url) : ''
+    preset: c.preset || 'gemini',
+    url: ready ? normalizeBaseUrl(c.url) : '',
+    primaryLabel: providerLabel(c),
+    hasBackup: bakReady,
+    backupLabel: providerLabel(b),
+    primaryDown: down('primary'),   // 主用最近失败过 → 正在走备用
+    fallback: bakReady              // 备用已就绪，可自动切换
   };
 }
 
@@ -279,9 +383,10 @@ export async function listModels(baseRaw, key) {
 }
 
 /** 设置页「测试连接」：先逐项检查配置，再发一次最小的真实请求，把失败原因说清楚 */
-export async function testLLM() {
-  const c = await llmConfig();
-  if (!c.enabled) return { ok: false, msg: '「启用 AI 增强」没有勾选——勾上并填好 API Key 才能翻译。' };
+export async function testLLM(cfgOverride) {
+  const c = cfgOverride || (await llmConfig());
+  const tag = cfgOverride ? '备用' : '主用';
+  if (!c.enabled) return { ok: false, msg: `${tag}：「启用 AI 增强」没有勾选——勾上并填好 API Key 才能翻译。` };
   if (!String(c.url || '').trim()) return { ok: false, msg: '接口地址为空：请先选服务商（自动带出地址），或手动填写。' };
   if (!String(c.key || '').trim()) return { ok: false, msg: 'API Key 是空的——这是最常见的原因。请到服务商后台生成 sk-… 密钥，完整粘贴到这里再测试。' };
   if (!String(c.model || '').trim()) return { ok: false, msg: '模型名为空：请填写如 deepseek-chat、moonshot-v1-8k。' };
@@ -314,6 +419,19 @@ export async function testLLM() {
   } catch (e) {
     return { ok: false, msg: '连不上 ' + base + ' —— 网络不通、地址写错，或该服务商不允许网页直连。' };
   }
+}
+
+/** 一次把主用 + 备用都测一遍，界面直接显示两条通道各自通不通 */
+export async function testBothLLM() {
+  const [p, b] = [await llmConfig(), await backupConfig()];
+  const out = [];
+  out.push(usable(p)
+    ? { which: '主用', label: providerLabel(p), ...(await testLLM(p)) }
+    : { which: '主用', label: providerLabel(p), ok: false, msg: '没配好（未启用或 API Key 为空），会自动走备用' });
+  out.push(usable(b)
+    ? { which: '备用', label: providerLabel(b), ...(await testLLM(b)) }
+    : { which: '备用', label: providerLabel(b), ok: false, msg: '没配好（未启用或 API Key 为空）——主用挂了就没有退路' });
+  return out;
 }
 
 function fromLocal(hit) {
@@ -368,8 +486,8 @@ export async function enrichSentences(sentences) {
     example: ''
   }));
   if (!(await llmReady())) return { items: out, source: 'local' };
-  try {
-    const data = await chat([
+  {
+    const r = await chatAuto([
       { role: 'system', content: SYS_COACH },
       {
         role: 'user',
@@ -388,14 +506,17 @@ Return JSON: {"items":[{"en":string,"cn":string,"natural":string,"scene":string,
 Keep the same order and count.`
       }
     ], { json: true });
-    const items = data.items || [];
-    if (items.length) {
-      return {
-        items: out.map((o, i) => ({ ...o, ...(items[i] || {}), en: (items[i] && items[i].en) || o.en })),
-        source: 'ai'
-      };
+
+    if (r.ok) {
+      const items = r.data.items || [];
+      if (items.length) {
+        return {
+          items: out.map((o, i) => ({ ...o, ...(items[i] || {}), en: (items[i] && items[i].en) || o.en })),
+          source: 'ai', provider: r.label, viaBackup: r.provider === 'backup'
+        };
+      }
     }
-  } catch { /* 降级到本地 */ }
+  }
   return { items: out, source: 'local' };
 }
 

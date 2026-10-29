@@ -2,8 +2,9 @@
 import { Store, SCENES, sceneName, sceneIcon, uid, newSRS } from './store.js';
 import {
   generateVariants, enrichSentences, cleanText, splitSentences,
-  guessScene, toEntry, llmConfig, saveLLMConfig, llmReady, PRESETS, corpus, phrasebook,
-  normalizeBaseUrl, localVariants, engineStatus, listModels, testLLM
+  guessScene, toEntry, llmConfig, saveLLMConfig, backupConfig, saveBackupConfig,
+  llmReady, PRESETS, corpus, phrasebook,
+  normalizeBaseUrl, localVariants, engineStatus, listModels, testLLM, testBothLLM
 } from './engine.js';
 import { buildIndex, searchEntries } from './search.js';
 import { recognize, downscale } from './ocr.js';
@@ -227,7 +228,9 @@ function renderVariants(out, cn, res) {
     return;
   }
   const head = res.source === 'ai'
-    ? `<div class="banner ok">✨ 大模型生成 · 已按“随意 → 正式”排序，逐条核对后收藏</div>`
+    ? `<div class="banner ok">✨ ${res.viaBackup
+        ? `${esc(res.fellFrom || '主用服务商')} 连不上，已自动切换到<b>备用：${esc(res.provider || '')}</b>`
+        : `大模型生成 · ${esc(res.provider || '')}`} · 已按“随意 → 正式”排序，逐条核对后收藏</div>`
     : res.matched && res.matched !== cn
       ? `<div class="banner">本地近似说法：${esc(res.matched)}　<span class="muted">（不是同义句，注意核对意思）</span></div>`
       : `<div class="banner">来自本地语料库　<span class="muted">（离线可用，无需联网）</span></div>`;
@@ -682,24 +685,39 @@ async function next() {
 /* ============ 设置 ============ */
 async function openSettings() {
   const cfg = await llmConfig();
+  const bak = await backupConfig();
   const st = stats(state.entries);
   const node = el(`<div>
-    <div class="banner">离线也能用：内置 ${corpus().length} 组地道说法，无需联网。<br>接入大模型后，可生成任意中文的地道表达，并补全 OCR 句子的中文意思。</div>
+    <div class="banner">离线也能用：内置 ${corpus().length} 组地道说法，无需联网。<br>接入大模型后，可生成任意中文的地道表达，并补全 OCR 句子的中文意思。<br><b>建议主用 + 备用各配一家</b>：主用连不上时会自动切换，不用你手动改。</div>
+    <div class="section-title" style="margin-top:0">主用服务商（优先走它）</div>
     <label class="field"><span>服务商</span>
       <select data-preset>${PRESETS.map((p) => `<option value="${p.id}" ${cfg.preset === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}</select></label>
     <label class="field"><span>接口地址（OpenAI 兼容）</span><input type="text" data-url value="${esc(cfg.url)}" placeholder="https://…/v1">
-      <span class="muted" style="margin-top:5px">只填到域名即可，会自动补 /v1：如 https://api.deepseek.com、https://api.openai.com</span></label>
+      <span class="muted" style="margin-top:5px">只填到域名即可，会自动补 /v1</span></label>
     <label class="field"><span>API Key</span><input type="password" data-key value="${esc(cfg.key)}" placeholder="AIza… 或 sk-…"></label>
-    <label class="field"><span>模型</span><input type="text" data-model value="${esc(cfg.model)}" placeholder="gpt-4o-mini"></label>
-    <label class="row" style="margin-bottom:12px">
+    <label class="field"><span>模型</span><input type="text" data-model value="${esc(cfg.model)}" placeholder="gemini-2.5-flash"></label>
+    <label class="row" style="margin-bottom:4px">
       <input type="checkbox" data-on ${cfg.enabled ? 'checked' : ''} style="width:auto">
       <span>启用 AI 增强</span>
     </label>
-    <div class="btn-row"><button class="btn soft sm" id="s-test">测试连接</button>
-      <button class="btn ghost sm" id="s-models">列出可用模型</button></div>
-    <div class="muted" id="s-test-out" style="margin-top:8px;font-size:13px;line-height:1.6;white-space:pre-line">会先检查配置是否填全，再真实请求一次接口。</div>
+    <hr class="sep">
+    <div class="section-title" style="margin-top:0">备用服务商（主用失败时自动切换）</div>
+    <div class="muted" style="font-size:12px;margin-bottom:8px">主用超时、Key 失效、网络不通（比如在大陆连不上 Google）时，会立刻换这条通道重发一次。</div>
+    <label class="field"><span>备用服务商</span>
+      <select data-bpreset>${PRESETS.map((p) => `<option value="${p.id}" ${bak.preset === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}</select></label>
+    <label class="field"><span>接口地址</span><input type="text" data-burl value="${esc(bak.url)}" placeholder="https://…/v1"></label>
+    <label class="field"><span>备用 API Key</span><input type="password" data-bkey value="${esc(bak.key)}" placeholder="sk-…"></label>
+    <label class="field"><span>模型</span><input type="text" data-bmodel value="${esc(bak.model)}" placeholder="Qwen/Qwen3-8B"></label>
+    <label class="row" style="margin-bottom:12px">
+      <input type="checkbox" data-bon ${bak.enabled === false ? '' : 'checked'} style="width:auto">
+      <span>启用备用通道</span>
+    </label>
+    <div class="btn-row"><button class="btn soft sm" id="s-test">测试两条通道</button>
+      <button class="btn ghost sm" id="s-models">列出主用可用模型</button></div>
+    <div class="muted" id="s-test-out" style="margin-top:8px;font-size:13px;line-height:1.6;white-space:pre-line">会分别真实请求主用和备用，各报各的结果。</div>
     <div class="banner ok" style="margin-top:10px">🆓 <b>有三个免费档可以不花钱用</b>（有每日/每分钟次数限制，个人日常翻译完全够）。详见下方说明。</div>
     <div class="muted" style="font-size:12px;line-height:1.7;margin-top:10px">
+      <b>推荐组合：主用 Gemini（质量最好）+ 备用 硅基流动（国内直连）</b> —— 出了大陆网自动切备用，两边都不耽误。<br>
       <b>① Google Gemini（推荐·最省事，有 Gmail 就行）</b>：打开 aistudio.google.com → 用 Google 账号登录 → 左侧「Get API key」→ Create API key → 复制 AIza 开头的串。不用信用卡、不用充值。选「Google Gemini（免费）」预设即可。<span style="color:var(--rose)">注意：Google 的服务在中国大陆直连不通，需要在非大陆网络下使用。</span><br>
       <b>② 硅基流动 SiliconFlow（免费·主打大陆直连）</b>：cloud.siliconflow.cn 手机号注册 + 个人实名（姓名+身份证号，不传证件照）→ 左侧「账户管理 → API 密钥」→ 新建 API 密钥 → 复制。模型填 <b>Qwen/Qwen3-8B</b>（实测余额 0 也能调，长期免费；备选 THUDM/GLM-4-9B-0414）。<br>
       <b>③ OpenRouter 免费模型池</b>：openrouter.ai 注册 → Keys → Create Key；模型填 openrouter/free（自动挑当前可用的免费模型）。<b>免费额度约每天 50 次</b>，超了要等次日。<br>
@@ -724,43 +742,61 @@ async function openSettings() {
   const s = sheet('设置', node);
   const verNode = node.querySelector('#s-ver');
   appVersion().then((v) => {
-    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v10</b><br>
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v11</b><br>
     若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
   });
   const presetSel = node.querySelector('[data-preset]');
   const urlIn = node.querySelector('[data-url]');
   const modelIn = node.querySelector('[data-model]');
+  const bPresetSel = node.querySelector('[data-bpreset]');
+  const bUrlIn = node.querySelector('[data-burl]');
+  const bModelIn = node.querySelector('[data-bmodel]');
   presetSel.onchange = () => {
     const p = PRESETS.find((x) => x.id === presetSel.value);
     if (p && p.url) { urlIn.value = p.url; modelIn.value = p.model; }
+  };
+  bPresetSel.onchange = () => {
+    const p = PRESETS.find((x) => x.id === bPresetSel.value);
+    if (p && p.url) { bUrlIn.value = p.url; bModelIn.value = p.model; }
   };
   const collect = () => ({
     preset: presetSel.value,
     url: normalizeBaseUrl(urlIn.value),
     key: node.querySelector('[data-key]').value.trim(),
-    model: modelIn.value.trim() || (PRESETS.find((p) => p.id === presetSel.value)?.model || 'gpt-4o-mini'),
+    model: modelIn.value.trim() || (PRESETS.find((p) => p.id === presetSel.value)?.model || 'gemini-2.5-flash'),
     enabled: node.querySelector('[data-on]').checked
+  });
+  const collectBackup = () => ({
+    preset: bPresetSel.value,
+    url: normalizeBaseUrl(bUrlIn.value),
+    key: node.querySelector('[data-bkey]').value.trim(),
+    model: bModelIn.value.trim() || (PRESETS.find((p) => p.id === bPresetSel.value)?.model || 'Qwen/Qwen3-8B'),
+    enabled: node.querySelector('[data-bon]').checked
   });
   node.querySelector('#s-test').onclick = async () => {
     const out = node.querySelector('#s-test-out');
-    out.textContent = '测试中…';
-    const cfg = { ...collect(), enabled: true };
-    await saveLLMConfig(cfg);
-    urlIn.value = cfg.url;              // 回显纠正后的地址
-    const r = await testLLM();
-    out.textContent = r.msg;
-    out.style.color = r.ok ? 'var(--fjord)' : 'var(--rose)';
+    out.style.color = '';
+    out.textContent = '正在分别测试主用与备用…（每家最多 30 秒）';
+    const c = collect(), b = collectBackup();
+    await saveLLMConfig({ ...c, enabled: true });
+    await saveBackupConfig(b);
+    urlIn.value = c.url; bUrlIn.value = b.url;   // 回显纠正后的地址
+    const rs = await testBothLLM();
+    out.innerHTML = rs
+      .map((r) => `${r.ok ? '✅' : '❌'} <b>${esc(r.which)}·${esc(r.label)}</b>：${esc(r.msg)}`)
+      .join('\n');
+    out.style.color = rs.some((r) => r.ok) ? 'var(--fjord)' : 'var(--rose)';
   };
   node.querySelector('#s-models').onclick = async () => {
     const out = node.querySelector('#s-test-out');
     out.style.color = '';
     out.textContent = '正在向服务商查询…';
-    const cfg = { ...collect(), enabled: true };
-    await saveLLMConfig(cfg);
-    urlIn.value = cfg.url;
-    const list = await listModels(cfg.url, cfg.key);
+    const cfg2 = { ...collect(), enabled: true };
+    await saveLLMConfig(cfg2);
+    urlIn.value = cfg2.url;
+    const list = await listModels(cfg2.url, cfg2.key);
     out.textContent = list.length
-      ? '你这个 Key 在 ' + normalizeBaseUrl(cfg.url) + ' 下可用：\n' + list.join('\n')
+      ? '你这个 Key 在 ' + normalizeBaseUrl(cfg2.url) + ' 下可用：\n' + list.join('\n')
       : '没查到：接口地址或 Key 不对，换一个服务商或直接手填模型名试试。';
   };
   node.querySelector('#s-export').onclick = async () => {
@@ -800,6 +836,7 @@ async function openSettings() {
   };
   node.querySelector('.close-sheet').onclick = async () => {
     await saveLLMConfig(collect());
+    await saveBackupConfig(collectBackup());
     s.close();
     renderBanner();
   };
@@ -817,8 +854,14 @@ async function renderBanner() {
   const st = await engineStatus();
   const ver = await appVersion();
   let html;
-  if (st.ai) {
-    html = `<div class="banner ok">✨ AI 增强已开启：<b>${esc(st.model)}</b> · 任意中文都能翻译　<span class="muted">${esc(ver)}</span></div>`;
+  if (st.ai && st.primaryDown && st.hasBackup) {
+    html = `<div class="banner warn">🔁 主用「${esc(st.primaryLabel)}」刚才连不上，已自动切换到<b>备用：${esc(st.backupLabel)}</b>　<span class="muted">${esc(ver)}</span></div>`;
+  } else if (st.ai && st.hasBackup) {
+    html = `<div class="banner ok">✨ AI 已开启：主用 <b>${esc(st.primaryLabel)}</b> · 备用 <b>${esc(st.backupLabel)}</b>（主用失败自动切换）　<span class="muted">${esc(ver)}</span></div>`;
+  } else if (st.ai) {
+    html = `<div class="banner ok">✨ AI 增强已开启：<b>${esc(st.model)}</b> · 任意中文都能翻译。<a href="#" id="to-settings" style="color:var(--fjord);font-weight:700">建议再配个备用 →</a>　<span class="muted">${esc(ver)}</span></div>`;
+  } else if (st.hasBackup) {
+    html = `<div class="banner ok">✨ AI 已开启（走<b>备用：${esc(st.backupLabel)}</b>）· 主用未配置，建议在设置里补上　<span class="muted">${esc(ver)}</span></div>`;
   } else if (st.incomplete) {
     html = `<div class="banner warn">⚠️ AI 配置不完整（${esc(st.missing.join('、'))}没填），所以翻译不出来。<a href="#" id="to-settings" style="color:var(--fjord);font-weight:700">去设置补全 →</a>　<span class="muted">${esc(ver)}</span></div>`;
   } else {
