@@ -161,10 +161,11 @@ async function clearFail(which) {
   const h = await health(); delete h[which]; await Store.setKV(HEALTH_KEY, h);
 }
 
-/** 通道显示名（去掉免费/付费前缀，界面更好读） */
+/** 通道显示名（去掉免费/付费 emoji 前缀，界面更好读）
+ *  注意：必须用 u 标志 + 码点写法，否则会把 emoji 的半个代理对切下来，显示成乱码方块 */
 export function providerLabel(c) {
   const p = PRESETS.find((x) => x.id === (c && c.preset));
-  if (p) return p.name.replace(/^[🆓💰]\s*/, '').trim();
+  if (p) return p.name.replace(/^[\u{1F193}\u{1F4B0}]\s*/u, '').trim();
   try { return new URL(normalizeBaseUrl(c && c.url)).hostname; } catch { return '自定义'; }
 }
 
