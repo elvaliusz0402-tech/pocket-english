@@ -201,8 +201,13 @@ async function chatWith(cfg, messages, { json = true, temperature = 0.3, timeout
   try {
     res = await send(true);
   } catch (e) {
-    // fetch 直接失败 = 网络不通 / 被浏览器拦截，多半是跨域或地址写错
-    throw new Error('连不上（网络不通或该服务商不允许网页直连）');
+    // fetch 直接失败 = 网络抖动 / 不通 / 被浏览器拦截。先原样重试一次（手机网络最容易在这一步掉链子）
+    try {
+      await new Promise((r) => setTimeout(r, 800));
+      res = await send(true);
+    } catch (e2) {
+      throw new Error('连不上（网络不通或该服务商不允许网页直连）');
+    }
   }
   // 部分服务商/模型不支持 JSON 模式，降级重试
   if (res.status === 400 || res.status === 422) res = await send(false);

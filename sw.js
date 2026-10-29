@@ -1,5 +1,5 @@
 /* Service Worker：离线可用（应用外壳 + 语料库） */
-const VERSION = 'pe-v13';
+const VERSION = 'pe-v14';
 const SHELL = [
   './',
   './index.html',
