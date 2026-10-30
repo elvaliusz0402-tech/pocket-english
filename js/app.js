@@ -10,7 +10,7 @@ import { buildIndex, searchEntries } from './search.js';
 import { recognize, downscale } from './ocr.js';
 import { buildQueue, grade, isDue, stats, dueIn, MASTERED_BOX } from './practice.js';
 import {
-  buildDailyDeck, markResult, dayProgress, checkAnswer, diffWords, phraseItems, DAILY_SIZE
+  buildDailyDeck, markResult, dayProgress, saveDayProgress, checkAnswer, diffWords, phraseItems, DAILY_SIZE
 } from './drill.js';
 import { el, esc, toast, speak, copy, sheet, confirmSheet, fmtTime } from './ui.js';
 
@@ -980,7 +980,7 @@ async function openSettings() {
   const s = sheet('设置', node);
   const verNode = node.querySelector('#s-ver');
   appVersion().then((v) => {
-    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v15</b><br>
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v16</b><br>
     若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
   });
   const presetSel = node.querySelector('[data-preset]');
