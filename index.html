@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
-<title>口袋英语 · 地道表达本</title>
+<title>talklog · 把中文变成地道英文</title>
 <meta name="description" content="把中文想法变成地道英文口语，拍照截图摘录台词，按场景分类，随时搜索与复习。">
 <meta name="theme-color" content="#3F6577">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="口袋英语">
+<meta name="apple-mobile-web-app-title" content="talklog">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <link rel="icon" href="./icons/favicon-64.png">
@@ -18,7 +18,7 @@
 <body>
 
 <header class="appbar">
-  <h1>口袋英语<span class="sub" id="appbar-sub">加载中…</span></h1>
+  <h1>talklog<span class="sub" id="appbar-sub">加载中…</span></h1>
   <button class="icon-btn" id="btn-settings" aria-label="设置">⚙️</button>
 </header>
 
@@ -82,7 +82,7 @@
     <div id="ocr-cards"></div>
   </section>
 
-  <!-- 3. 表达库 -->
+  <!-- 3. 积累库 -->
   <section class="page" id="page-library">
     <div class="stats" id="lib-stats"></div>
     <div class="chips" id="lib-scenes" style="margin-top:12px"></div>
@@ -93,8 +93,16 @@
     <div id="lib-list" style="margin-top:12px"></div>
   </section>
 
-  <!-- 4. 搜索与练习 -->
+  <!-- 4. 练习 -->
   <section class="page" id="page-practice">
+    <div class="card" id="d-card">
+      <div class="section-title" style="margin-top:0">🎯 今日滚动练习</div>
+      <div class="stats" id="d-stats"></div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn" id="d-start" style="flex:1">开始今日滚动</button>
+      </div>
+      <div class="muted" id="d-note" style="margin-top:10px"></div>
+    </div>
     <div class="card">
       <label class="field">
         <span>按中文意思搜索</span>
@@ -102,7 +110,7 @@
       </label>
       <div class="chips" id="p-filters"></div>
       <div class="btn-row" style="margin-top:12px">
-        <button class="btn" id="p-start" style="flex:1">开始练习</button>
+        <button class="btn" id="p-start" style="flex:1">练习搜索结果</button>
       </div>
       <div class="muted" id="p-count" style="margin-top:8px"></div>
     </div>
@@ -114,7 +122,7 @@
   <button data-tab="phrases" class="on"><span class="ico">📖</span>常用100句</button>
   <button data-tab="capture"><span class="ico">✍️</span>翻译</button>
   <button data-tab="ocr"><span class="ico">🖼️</span>图片识别</button>
-  <button data-tab="library"><span class="ico">📚</span>表达库</button>
+  <button data-tab="library"><span class="ico">📚</span>积累库</button>
   <button data-tab="practice"><span class="ico">🎯</span>练习</button>
 </nav>
 

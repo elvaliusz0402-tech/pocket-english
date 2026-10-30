@@ -1,5 +1,5 @@
 /* Service Worker：离线可用（应用外壳 + 语料库） */
-const VERSION = 'pe-v14';
+const VERSION = 'pe-v15';
 const SHELL = [
   './',
   './index.html',
@@ -11,6 +11,7 @@ const SHELL = [
   './js/search.js',
   './js/ocr.js',
   './js/practice.js',
+  './js/drill.js',
   './js/ui.js',
   './data/corpus-work.js',
   './data/corpus-social.js',

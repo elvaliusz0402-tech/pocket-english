@@ -1,6 +1,6 @@
 {
-  "name": "口袋英语 · 地道表达本",
-  "short_name": "口袋英语",
+  "name": "talklog · 把中文变成地道英文",
+  "short_name": "talklog",
   "description": "把中文想法变成地道英文口语；截图摘录台词；按场景分类；中文模糊搜索与间隔复习。",
   "lang": "zh-CN",
   "dir": "ltr",
@@ -34,7 +34,7 @@
   ],
   "shortcuts": [
     {
-      "name": "快速记录",
+      "name": "翻译",
       "short_name": "记录",
       "url": "./index.html#capture",
       "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }]

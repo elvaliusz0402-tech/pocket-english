@@ -349,3 +349,36 @@ hr.sep { border: none; border-top: 1px solid var(--line); margin: 16px 0; }
 .pb-group.closed .caret { transform: rotate(-90deg); }
 .pb-group.closed .pb-body { display: none; }
 .pb-body { display: grid; gap: 8px; margin-top: 8px; }
+
+/* ================= 每日滚动练习 ================= */
+.ans-area { margin-top: 20px; }
+.ans-area textarea {
+  width: 100%; box-sizing: border-box;
+  min-height: 74px; resize: none;
+  font-size: 17px; line-height: 1.5; padding: 12px 14px;
+  border: 1.5px solid var(--line); border-radius: var(--radius-s);
+  background: rgba(255, 255, 255, .95); color: var(--ink);
+}
+.ans-area textarea:focus { outline: none; border-color: var(--fjord); }
+#dl-mic { font-size: 18px; padding: 0 16px; }
+#dl-mic.rec { background: var(--rose); color: #fff; border-color: transparent; }
+.dl-res { margin-top: 20px; padding: 14px 14px 16px; border-radius: var(--radius);
+  background: rgba(255, 255, 255, .94); border: 1px solid var(--line);
+  box-shadow: var(--shadow-lift); animation: rise .22s ease; }
+.dl-res.ok { border-color: #D9E9DC; }
+.dl-res.near { border-color: #EBDCC0; }
+.dl-res.no { border-color: #F1DCDC; }
+.dl-res .verdict { font-weight: 800; font-size: 15.5px; text-align: center; }
+.dl-res.ok .verdict { color: #4E7A5C; }
+.dl-res.near .verdict { color: var(--amber); }
+.dl-res.no .verdict { color: var(--rose); }
+.dl-target, .dl-mine { font-size: 15px; line-height: 1.6; margin-top: 10px; text-align: center; }
+.dl-target { background: #F5FAF9; border-radius: 10px; padding: 9px 10px; }
+.w-ok { color: #4E7A5C; }
+.w-bad { color: var(--rose); text-decoration: underline wavy; }
+.grade3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+.grade3 button { padding: 12px 0; border-radius: var(--radius-s); font-weight: 700;
+  border: 1.5px solid var(--line); background: rgba(255,255,255,.95); cursor: pointer; font-size: 13.5px; }
+.grade3 .retry { color: var(--amber); border-color: #EBDCC0; background: #FCF6EA; }
+.grade3 .okbtn { color: #4E7A5C; border-color: #D9E9DC; background: #EDF5EF; }
+.grade3 .nextbtn { color: var(--rose); border-color: #F1DCDC; background: #FBEFEF; }

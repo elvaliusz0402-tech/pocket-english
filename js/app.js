@@ -1,4 +1,4 @@
-/* 口袋英语 · 主应用 */
+/* talklog · 主应用 */
 import { Store, SCENES, sceneName, sceneIcon, uid, newSRS } from './store.js';
 import {
   generateVariants, enrichSentences, cleanText, splitSentences,
@@ -9,6 +9,9 @@ import {
 import { buildIndex, searchEntries } from './search.js';
 import { recognize, downscale } from './ocr.js';
 import { buildQueue, grade, isDue, stats, dueIn, MASTERED_BOX } from './practice.js';
+import {
+  buildDailyDeck, markResult, dayProgress, checkAnswer, diffWords, phraseItems, DAILY_SIZE
+} from './drill.js';
 import { el, esc, toast, speak, copy, sheet, confirmSheet, fmtTime } from './ui.js';
 
 const state = {
@@ -97,7 +100,7 @@ function pbRow(x, savedEn) {
     await load();
     updateSub();
     renderPhrases();
-    toast('已收进表达库，可去练习页复习');
+    toast('已收进积累库，可去练习页复习');
   };
   return n;
 }
@@ -126,7 +129,7 @@ function renderPhrases() {
     if (searching) list = searchEntries(list, state.pbQ).map((r) => r.e);
     document.getElementById('pb-count').textContent = searching
       ? `匹配到 ${list.length} 句`
-      : `${cats.find((c) => c.id === state.pbCat)?.name || ''} · 共 ${list.length} 句 · 点★即可收进表达库`;
+      : `${cats.find((c) => c.id === state.pbCat)?.name || ''} · 共 ${list.length} 句 · 点★即可收进积累库`;
     if (!list.length) {
       wrap.innerHTML = `<div class="empty"><span class="big">🔎</span>没找到，换个关键词试试<br><span class="muted">支持中文意思、英文单词、场景名</span></div>`;
       return;
@@ -293,7 +296,7 @@ function renderVariants(out, cn, res) {
     document.getElementById('cap-input').value = '';
     updateSub();
     out.innerHTML = `<div class="card"><div class="row" style="justify-content:space-between">
-      <span class="muted">已存入表达库</span>
+      <span class="muted">已存入积累库</span>
       <button class="btn sm soft" id="cap-goto">去看看</button></div></div>`;
     out.querySelector('#cap-goto').onclick = () => setTab('library');
   };
@@ -416,7 +419,7 @@ function renderCards(items, source) {
   });
   box.appendChild(list);
   const bar = el(`<div class="btn-row" style="margin:6px 0 20px">
-    <button class="btn" id="ocr-save" style="flex:1">保存到表达库</button>
+    <button class="btn" id="ocr-save" style="flex:1">保存到积累库</button>
   </div>`);
   bar.querySelector('#ocr-save').onclick = async () => {
     const nodes = [...list.querySelectorAll('.card')];
@@ -443,7 +446,7 @@ function renderCards(items, source) {
   box.appendChild(bar);
 }
 
-/* ============ 页面三：表达库 ============ */
+/* ============ 页面三：积累库 ============ */
 function renderLibrary() {
   const list = filtered();
   const st = stats(state.entries);
@@ -559,8 +562,26 @@ function openEditor(entry, preset = {}) {
   });
 }
 
-/* ============ 页面四：搜索与练习 ============ */
+/* ============ 页面四：练习 ============ */
+async function renderDailyCard() {
+  const box = document.getElementById('d-stats');
+  const note = document.getElementById('d-note');
+  const btn = document.getElementById('d-start');
+  if (!box) return;
+  const prog = await dayProgress();
+  const total = phraseItems().length + state.entries.filter((e) => e.en && e.cn).length;
+  box.innerHTML = `
+    <div class="stat"><b style="color:var(--fjord)">${prog.done}</b><span>今日已过</span></div>
+    <div class="stat"><b style="color:#4E7A5C">${prog.right}</b><span>答对</span></div>
+    <div class="stat"><b style="color:var(--rose)">${prog.wrong}</b><span>答错</span></div>`;
+  const left = Math.max(0, DAILY_SIZE - prog.done);
+  note.innerHTML = `每天 ${DAILY_SIZE} 条：常用100句 + 积累库混合，给中文写出/说出英文。<b>答对即过，答错的题本轮还会再出现</b>（之后的几天也更容易被抽到）。题池共 ${total} 条，今天还剩 ${left} 条。`;
+  btn.textContent = prog.done ? `继续今日滚动（还剩 ${left} 条）` : '开始今日滚动';
+  btn.onclick = startDaily;
+}
+
 function renderPractice() {
+  renderDailyCard();
   const fb = document.getElementById('p-filters');
   fb.innerHTML = '';
   const mk = (label, on, fn) => {
@@ -597,6 +618,223 @@ function startPractice(list) {
   session = { queue, i: 0, revealed: false, tally: { know: 0, fuzzy: 0, unknown: 0 } };
   renderSession();
 }
+
+/* ============ 每日滚动练习 ============ */
+let drill = null;
+
+async function startDaily() {
+  const { deck } = await buildDailyDeck(state.entries);
+  if (!deck.length) { toast('题池是空的：先去积累几句话，或检查常用100句'); return; }
+  drill = { deck, i: 0, right: 0, wrong: 0 };
+  renderDrill();
+}
+
+/** 这道题可接受的答案：原句 + 更口语改写 + 其他说法 */
+function drillTargets(it) {
+  const t = [it.en];
+  if (it.ref) {
+    if (it.ref.natural) t.push(it.ref.natural);
+    (it.ref.alts || []).forEach((a) => a.en && t.push(a.en));
+  }
+  return t;
+}
+
+/** 网页语音识别（不支持时给出可操作的替代方案） */
+function startVoice(onText, onErr) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    onErr('这台浏览器不支持网页语音识别：可以直接打字，或用键盘上的 🎤 系统语音输入。');
+    return null;
+  }
+  const r = new SR();
+  r.lang = 'en-US';
+  r.interimResults = true;
+  r.continuous = false;
+  r.onresult = (e) => {
+    let txt = '';
+    for (let i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript;
+    onText(txt.trim());
+  };
+  r.onerror = (e) => {
+    if (e.error === 'aborted') return;
+    onErr(e.error === 'not-allowed'
+      ? '麦克风权限被拒：到系统设置里允许这个网页用麦克风'
+      : '语音识别中断：' + e.error);
+  };
+  try { r.start(); } catch { /* 已在运行 */ }
+  return r;
+}
+
+function renderDrill() {
+  const root = document.getElementById('practice');
+  const d = drill;
+  if (!d) return;
+  if (d.i >= d.deck.length) return finishDrill();
+  root.classList.add('on');
+  const it = d.deck[d.i];
+  const total = d.deck.length;
+
+  root.innerHTML = `
+    <div class="bar">
+      <div class="muted">${d.i + 1} / ${total} · ✅${d.right} ❌${d.wrong}</div>
+      <div class="prog" style="flex:1;margin:0"><i style="width:${(d.i / total) * 100}%"></i></div>
+      <button class="btn sm ghost x" id="dl-exit">退出</button>
+    </div>
+    <div class="stage">
+      <div class="chips" style="justify-content:center"><span class="chip mini src">${esc(it.label)}</span></div>
+      <div class="big-cn" style="margin-top:14px">${esc(it.cn)}</div>
+      <div class="hint">用英文说出或写出这句话，然后对答案</div>
+      <div class="ans-area">
+        <textarea id="dl-in" rows="2" placeholder="Type or dictate in English…"
+          autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn" id="dl-go" style="flex:1">对答案</button>
+          <button class="btn soft" id="dl-mic" title="语音输入">🎤</button>
+          <button class="btn ghost" id="dl-peek">看答案</button>
+        </div>
+        <div class="muted" id="dl-voice-note" style="text-align:center;margin-top:6px"></div>
+      </div>
+      <div id="dl-out"></div>
+    </div>`;
+
+  const ta = root.querySelector('#dl-in');
+  const out = root.querySelector('#dl-out');
+  root.querySelector('#dl-exit').onclick = () => {
+    root.classList.remove('on');
+    drill = null;
+    renderPractice();
+  };
+
+  // 判分并渲染结果。mode: 'auto'=按输入判 | 'force'=用户确认自己对 | 'peek'=看答案（记为没答上）
+  const judge = (mode) => {
+    const val = ta.value.trim();
+    if (mode === 'auto' && !val) { toast('先写出或说出你的英文'); return; }
+    const targets = drillTargets(it);
+
+    if (mode === 'peek') {
+      out.innerHTML = `<div class="dl-res no">
+        <div class="verdict">👀 参考答案</div>
+        <div class="dl-target"><b>原句</b>：${esc(it.en)}
+          <button class="btn sm ghost" id="dl-say" style="padding:2px 10px">🔊</button></div>
+        ${it.tip ? `<div class="sub muted">💡 ${esc(it.tip)}</div>` : ''}
+        <div class="btn-row" style="margin-top:12px"><button class="btn" id="dl-wrong" style="flex:1">下一条（这道记为没答上）</button></div>
+      </div>`;
+      root.querySelector('#dl-say').onclick = () => speak(it.en);
+      root.querySelector('#dl-wrong').onclick = () => { record(it, false); requeue(it); d.i++; renderDrill(); };
+      return;
+    }
+    if (mode === 'force') { record(it, true); d.i++; renderDrill(); return; }
+
+    const r = checkAnswer(val, targets);
+    const showTarget = () => {
+      const diff = diffWords(val, r.target || it.en);
+      return `<div class="dl-target"><b>参考</b>：${diff
+        .map((x) => `<span class="${x.ok ? 'w-ok' : 'w-bad'}">${esc(x.w)}</span>`)
+        .join(' ')}</div>`;
+    };
+
+    if (r.level === 'ok') {
+      out.innerHTML = `<div class="dl-res ok">
+        <div class="verdict">✅ ${r.score >= 0.98 ? '完全正确' : '意思对了（措辞略有出入）'}</div>
+        <div class="dl-target"><b>原句</b>：${esc(it.en)}
+          <button class="btn sm ghost" id="dl-say" style="padding:2px 10px">🔊</button></div>
+        ${it.tip ? `<div class="sub muted">💡 ${esc(it.tip)}</div>` : ''}
+        <div class="btn-row" style="margin-top:12px"><button class="btn" id="dl-next" style="flex:1">下一条 →</button></div>
+      </div>`;
+      root.querySelector('#dl-say').onclick = () => speak(it.en);
+      speak(it.en);
+      record(it, true);
+      const go = () => { d.i++; renderDrill(); };
+      root.querySelector('#dl-next').onclick = go;
+      setTimeout(() => { if (drill === d && root.querySelector('#dl-next')) go(); }, 1800);
+    } else {
+      const pct = Math.round(r.score * 100);
+      out.innerHTML = `<div class="dl-res ${r.level === 'near' ? 'near' : 'no'}">
+        <div class="verdict">${r.level === 'near' ? '🟡 很接近了（相似度 ' + pct + '%）' : '❌ 不太对（相似度 ' + pct + '%）'}</div>
+        <div class="dl-mine"><b>你的答案</b>：${esc(val)}</div>
+        ${showTarget()}
+        <div style="text-align:center"><button class="btn sm ghost" id="dl-say">🔊 听一遍</button></div>
+        ${it.tip ? `<div class="sub muted">💡 ${esc(it.tip)}</div>` : ''}
+        <div class="grade3">
+          <button class="retry" id="dl-retry">↻ 再试一次</button>
+          <button class="okbtn" id="dl-force">✓ 就这么说的</button>
+          <button class="nextbtn" id="dl-wrong">→ 下一条</button>
+        </div>
+        <div class="muted" style="text-align:center;margin-top:6px">「下一条」会记为没答上，这道题等下还会再出现</div>
+      </div>`;
+      root.querySelector('#dl-say').onclick = () => speak(r.target || it.en);
+      root.querySelector('#dl-retry').onclick = () => {
+        out.innerHTML = '';
+        ta.focus(); ta.select();
+      };
+      root.querySelector('#dl-force').onclick = () => judge('force');
+      root.querySelector('#dl-wrong').onclick = () => { record(it, false); requeue(it); d.i++; renderDrill(); };
+    }
+  };
+
+  // 答错的题在本轮里再出现一次（隔 2~4 题后）
+  const requeue = (item) => {
+    if (d.deck.filter((x) => x === item).length > 2) return;   // 防止无限循环
+    const at = d.i + 1 + Math.floor(Math.random() * Math.min(4, d.deck.length - d.i));
+    d.deck.splice(Math.min(at, d.deck.length), 0, item);
+  };
+
+  // 记录结果：drill 熟练度 + 今日进度 + 积累库 SRS
+  const record = async (item, ok) => {
+    await markResult(item.key, ok);
+    const prog = await dayProgress();
+    if (ok) prog.right++; else prog.wrong++;
+    if (ok && !prog.keys.includes(item.key)) {
+      prog.keys.push(item.key);
+      prog.done = prog.keys.length;
+    }
+    await saveDayProgress(prog);
+    if (ok) d.right++; else d.wrong++;
+    if (item.ref) {
+      grade(item.ref, ok ? 'know' : 'unknown');
+      await Store.put(item.ref);
+    }
+  };
+
+  root.querySelector('#dl-go').onclick = () => judge('auto');
+  ta.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); judge('auto'); }
+  });
+  root.querySelector('#dl-peek').onclick = () => {
+    ta.value = '';
+    judge('peek');   // 看答案 = 记为没答上，同时把参考答案亮出来
+  };
+  root.querySelector('#dl-mic').onclick = () => {
+    const note = root.querySelector('#dl-voice-note');
+    note.textContent = '正在听…请说英文';
+    const rec = startVoice(
+      (txt) => { ta.value = txt; if (txt) note.textContent = '🎤 已识别，点「对答案」'; },
+      (msg) => { note.textContent = msg; }
+    );
+    if (rec) setTimeout(() => { try { rec.stop(); } catch { } }, 8000);
+  };
+}
+
+async function finishDrill() {
+  const root = document.getElementById('practice');
+  root.classList.remove('on');
+  const d = drill;
+  drill = null;
+  await load();
+  renderPractice();
+  updateSub();
+  const node = el(`<div>
+    <div class="stats" style="margin-bottom:14px">
+      <div class="stat"><b style="color:#4E7A5C">${d.right}</b><span>答对</span></div>
+      <div class="stat"><b style="color:var(--rose)">${d.wrong}</b><span>没答上</span></div>
+      <div class="stat"><b style="color:var(--fjord)">${d.right + d.wrong}</b><span>共答题</span></div>
+    </div>
+    <p class="muted">没答上的题已经加权重排：明天更容易被抽到；答对的下一次出现会更晚。</p>
+    <div class="btn-row"><button class="btn close-sheet" style="flex:1">完成</button></div>
+  </div>`);
+  sheet('今日滚动完成 🎉', node);
+}
+
 
 function renderSession() {
   const root = document.getElementById('practice');
@@ -742,7 +980,7 @@ async function openSettings() {
   const s = sheet('设置', node);
   const verNode = node.querySelector('#s-ver');
   appVersion().then((v) => {
-    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v14</b><br>
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v15</b><br>
     若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
   });
   const presetSel = node.querySelector('[data-preset]');
@@ -804,7 +1042,7 @@ async function openSettings() {
     const blob = new Blob([data], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `pocket-english-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `talklog-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     toast('已导出');
   };
