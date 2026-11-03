@@ -3,7 +3,7 @@ import { Store, SCENES, sceneName, sceneIcon, uid, newSRS } from './store.js';
 import {
   generateVariants, enrichSentences, cleanText, splitSentences,
   guessScene, toEntry, llmConfig, saveLLMConfig, backupConfig, saveBackupConfig,
-  llmReady, PRESETS, corpus, phrasebook,
+  llmReady, PRESETS, corpus, phrasebook, providerLabel,
   normalizeBaseUrl, localVariants, engineStatus, listModels, testLLM, testBothLLM
 } from './engine.js';
 import { buildIndex, searchEntries } from './search.js';
@@ -963,6 +963,15 @@ async function openSettings() {
       不确定自己能用哪些模型？点上面「<b>列出可用模型</b>」直接查。<br>
       Key <b>只显示一次</b>，请立即复制；它等同账号密码，别发给别人。
     <hr class="sep">
+    <div class="section-title" style="margin-top:0">跨设备配置（手机 ⇄ 电脑）</div>
+    <div class="muted" style="font-size:12px;line-height:1.7;margin-bottom:8px">配置只存在当前浏览器里——换设备、换浏览器（微信里打开 ≠ Chrome 里打开）都要重新配。把<b>配置码</b>或 <b>sk- 开头的 API Key</b> 用微信发到手机，复制后在这里粘贴。<span style="color:var(--rose)">配置码等同密码，别发到群里。</span></div>
+    <textarea id="cfg-io" rows="2" placeholder="粘贴配置码（一段长字母数字串）或 sk- 开头的 Key" style="width:100%;font-size:12px"></textarea>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn soft sm" id="cfg-import-go">导入配置</button>
+      <button class="btn ghost sm" id="cfg-copy">复制本机配置码</button>
+    </div>
+    <div class="muted" id="cfg-out" style="margin-top:6px;font-size:13px;line-height:1.6"></div>
+    <hr class="sep">
     <div class="section-title" style="margin-top:0">数据</div>
     <div class="btn-row">
       <button class="btn ghost sm" id="s-export">导出 JSON</button>
@@ -980,7 +989,7 @@ async function openSettings() {
   const s = sheet('设置', node);
   const verNode = node.querySelector('#s-ver');
   appVersion().then((v) => {
-    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v17</b><br>
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v18</b><br>
     若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
   });
   const presetSel = node.querySelector('[data-preset]');
@@ -1036,6 +1045,38 @@ async function openSettings() {
     out.textContent = list.length
       ? '你这个 Key 在 ' + normalizeBaseUrl(cfg2.url) + ' 下可用：\n' + list.join('\n')
       : '没查到：接口地址或 Key 不对，换一个服务商或直接手填模型名试试。';
+  };
+  node.querySelector('#cfg-import-go').onclick = async () => {
+    const out = node.querySelector('#cfg-out');
+    const raw = node.querySelector('#cfg-io').value.trim();
+    if (!raw) { out.textContent = '先粘贴配置码或 sk- 开头的 API Key。'; return; }
+    try {
+      const data = await decodeCfgCode(raw);
+      if (!data.p && !data.b) throw new Error('内容里没有配置');
+      await applyCfg(data);
+      const c = await llmConfig(), b2 = await backupConfig();
+      presetSel.value = c.preset || presetSel.value; urlIn.value = c.url || '';
+      modelIn.value = c.model || ''; node.querySelector('[data-key]').value = c.key || '';
+      node.querySelector('[data-on]').checked = !!c.enabled;
+      bPresetSel.value = b2.preset || bPresetSel.value; bUrlIn.value = b2.url || '';
+      bModelIn.value = b2.model || ''; node.querySelector('[data-bkey]').value = b2.key || '';
+      node.querySelector('[data-bon]').checked = b2.enabled !== false;
+      node.querySelector('#cfg-io').value = '';
+      out.innerHTML = `✅ 已导入并保存。主用：<b>${esc(providerLabel(c))}</b>` +
+        (String(b2.key || '').trim() ? ` · 备用：<b>${esc(providerLabel(b2))}</b>` : '') +
+        '。直接回翻译页试一句吧。';
+      renderBanner();
+      toast('配置已导入');
+    } catch (e) { out.textContent = '导入失败：' + (e && e.message ? e.message : '内容不合法'); }
+  };
+  node.querySelector('#cfg-copy').onclick = async () => {
+    const c = collect(), b2 = collectBackup();
+    const code = encodeCfgCode({
+      p: { preset: c.preset, url: c.url, key: c.key, model: c.model },
+      b: { preset: b2.preset, url: b2.url, key: b2.key, model: b2.model }
+    });
+    await copy(code);
+    toast('本机配置码已复制，发到手机后在这页粘贴导入');
   };
   node.querySelector('#s-export').onclick = async () => {
     const data = JSON.stringify(await Store.all(), null, 2);
@@ -1115,19 +1156,39 @@ function updateSub() {
 }
 
 /* ============ 启动 ============ */
+/* 配置码 = base64url(JSON)，扫码链接（#cfg=…）与设置页「粘贴配置码」共用。
+   JSON 结构：{ p: 主用配置, b: 备用配置 }。也兼容直接粘贴 sk- 开头的裸 API Key（自动配成硅基流动主用）。 */
+function encodeCfgCode(obj) {
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  let bin = '';
+  bytes.forEach((b) => { bin += String.fromCharCode(b); });
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+async function decodeCfgCode(raw) {
+  let s = String(raw || '').trim();
+  const m = s.match(/#cfg=([A-Za-z0-9\-_]+)/);
+  if (m) s = m[1];
+  if (/^sk-[A-Za-z0-9]{20,}$/.test(s)) {
+    return { p: { preset: 'siliconflow', url: 'https://api.siliconflow.cn/v1', key: s, model: 'THUDM/GLM-4-9B-0414' } };
+  }
+  let b64 = s.replace(/-/g, '+').replace(/_/g, '/');
+  while (b64.length % 4) b64 += '=';
+  const json = decodeURIComponent([...atob(b64)].map((c) =>
+    '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join(''));
+  return JSON.parse(json);
+}
+async function applyCfg(data) {
+  if (data.p) await saveLLMConfig({ enabled: true, ...data.p });
+  if (data.b) await saveBackupConfig({ enabled: true, ...data.b });
+}
 /* 一键配置：网址带 #cfg=<base64url(配置)> 时自动写入主用/备用配置并清掉参数。
    用途：在电脑上生成配置链接/二维码，手机扫码打开即完成 AI 配置，免手打长 Key。 */
 async function importConfigFromHash() {
   const m = (location.hash || '').match(/^#cfg=([A-Za-z0-9\-_]+)/);
   if (!m) return false;
   try {
-    let b64 = m[1].replace(/-/g, '+').replace(/_/g, '/');
-    while (b64.length % 4) b64 += '=';
-    const json = decodeURIComponent([...atob(b64)].map((c) =>
-      '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join(''));
-    const data = JSON.parse(json);
-    if (data.p) await saveLLMConfig({ enabled: true, ...data.p });
-    if (data.b) await saveBackupConfig({ enabled: true, ...data.b });
+    const data = await decodeCfgCode(location.hash);
+    await applyCfg(data);
     history.replaceState(null, '', location.pathname + location.search);
     return true;
   } catch { return false; }
