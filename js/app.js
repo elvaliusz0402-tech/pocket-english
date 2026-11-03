@@ -980,7 +980,7 @@ async function openSettings() {
   const s = sheet('设置', node);
   const verNode = node.querySelector('#s-ver');
   appVersion().then((v) => {
-    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v16</b><br>
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v17</b><br>
     若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
   });
   const presetSel = node.querySelector('[data-preset]');
@@ -1115,6 +1115,24 @@ function updateSub() {
 }
 
 /* ============ 启动 ============ */
+/* 一键配置：网址带 #cfg=<base64url(配置)> 时自动写入主用/备用配置并清掉参数。
+   用途：在电脑上生成配置链接/二维码，手机扫码打开即完成 AI 配置，免手打长 Key。 */
+async function importConfigFromHash() {
+  const m = (location.hash || '').match(/^#cfg=([A-Za-z0-9\-_]+)/);
+  if (!m) return false;
+  try {
+    let b64 = m[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    const json = decodeURIComponent([...atob(b64)].map((c) =>
+      '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join(''));
+    const data = JSON.parse(json);
+    if (data.p) await saveLLMConfig({ enabled: true, ...data.p });
+    if (data.b) await saveBackupConfig({ enabled: true, ...data.b });
+    history.replaceState(null, '', location.pathname + location.search);
+    return true;
+  } catch { return false; }
+}
+
 async function boot() {
   document.querySelectorAll('.tabbar button').forEach((b) => {
     b.onclick = () => setTab(b.dataset.tab);
@@ -1140,8 +1158,13 @@ async function boot() {
   });
 
   await load();
+  const imported = await importConfigFromHash();
   updateSub();
   renderBanner();
+  if (imported) {
+    renderBanner();
+    setTimeout(() => toast('✅ AI 配置已自动导入，可直接翻译'), 600);
+  }
 
   const fromHash = () => {
     const h = (location.hash || '').replace('#', '');
