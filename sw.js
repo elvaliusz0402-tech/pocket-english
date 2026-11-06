@@ -1,11 +1,12 @@
 /* Service Worker：离线可用（应用外壳 + 语料库） */
-const VERSION = 'pe-v18';
+const VERSION = 'pe-v19';
 const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './css/style.css',
   './js/app.js',
+  './js/icons.js',
   './js/store.js',
   './js/engine.js',
   './js/search.js',
@@ -17,6 +18,8 @@ const SHELL = [
   './data/corpus-social.js',
   './data/corpus-life.js',
   './data/phrasebook.js',
+  './data/packs.js',
+  './audio/index.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png'

@@ -29,13 +29,16 @@ export async function dayProgress() {
 }
 export async function saveDayProgress(p) { await Store.setKV(DAY_KEY, p); }
 
-/** 把两边的题源拉平成统一的题卡 */
-export function phraseItems() {
-  return phrasebook().map((p) => ({
+/** 把两边的题源拉平成统一的题卡。packId 指定只取某个语言包（默认全部） */
+export function phraseItems(packId) {
+  const all = phrasebook().filter((p) => !packId || p._pack === packId);
+  return all.map((p) => ({
     key: 'pb:' + (p._cat || '') + ':' + (p.cn || ''),
     cn: p.cn, en: p.variants[0].en,
     tip: p.variants[0].tip || '', scene: p.variants[0].scene || 'other',
-    label: '常用100句 · ' + (p._cat || ''), kind: 'phrase'
+    label: (window.PHRASE_PACKS || []).find((x) => x.id === p._pack)?.name
+      ? (window.PHRASE_PACKS.find((x) => x.id === p._pack).name + ' · ' + (p._cat || ''))
+      : '常用100句 · ' + (p._cat || ''), kind: 'phrase'
   }));
 }
 
@@ -51,7 +54,7 @@ export function libItems(entries) {
 }
 
 /** 抽今日题：常用句按"最久没考"轮换 + 权重；积累库按到期优先。答对过的今天不再出 */
-export async function buildDailyDeck(entries, { size = DAILY_SIZE, phraseRatio = 0.5 } = {}) {
+export async function buildDailyDeck(entries, { size = DAILY_SIZE, phraseRatio = 0.5, packId = '' } = {}) {
   const st = await drillState();
   const prog = await dayProgress();
   const done = new Set(prog.keys || []);
@@ -73,7 +76,7 @@ export async function buildDailyDeck(entries, { size = DAILY_SIZE, phraseRatio =
     return keyed.slice(0, n).map((x) => x.it);
   };
 
-  const phrases = phraseItems();
+  const phrases = phraseItems(packId);
   const libs = libItems(entries).sort((a, b) => {
     const da = isDue(a.ref) ? 0 : 1, db = isDue(b.ref) ? 0 : 1;
     return da - db || (a.ref.srs?.box || 0) - (b.ref.srs?.box || 0);

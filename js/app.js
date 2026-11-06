@@ -3,7 +3,7 @@ import { Store, SCENES, sceneName, sceneIcon, uid, newSRS } from './store.js';
 import {
   generateVariants, enrichSentences, cleanText, splitSentences,
   guessScene, toEntry, llmConfig, saveLLMConfig, backupConfig, saveBackupConfig,
-  llmReady, PRESETS, corpus, phrasebook, providerLabel,
+  llmReady, PRESETS, corpus, phrasebook, providerLabel, matchCorpus,
   normalizeBaseUrl, localVariants, engineStatus, listModels, testLLM, testBothLLM
 } from './engine.js';
 import { buildIndex, searchEntries } from './search.js';
@@ -13,6 +13,7 @@ import {
   buildDailyDeck, markResult, dayProgress, saveDayProgress, checkAnswer, diffWords, phraseItems, DAILY_SIZE
 } from './drill.js';
 import { el, esc, toast, speak, copy, sheet, confirmSheet, fmtTime } from './ui.js';
+import { ico, PACK_ICONS } from './icons.js';
 
 const state = {
   entries: [],
@@ -24,6 +25,7 @@ const state = {
   capScene: '',
  ocrSents: [],
   ocrCards: [],
+  pbPack: localStorage.getItem('talklog-pack') || 'daily',
   pbCat: 'all',
   pbQ: '',
   pbOpen: {}   // 常用句分组折叠状态 { catId: bool }
@@ -61,20 +63,33 @@ function setTab(name) {
   window.scrollTo({ top: 0 });
 }
 
-/* ============ 页面零：常用100句 ============ */
-let PB_IDX = null;
+/* ============ 页面零：常用句（多语言包） ============ */
+const allPacks = () => (window.PHRASE_PACKS
+  || [{ id: 'daily', name: '日常用语', cats: window.PHRASEBOOK || [] }]);
+
+function curPack() {
+  const ps = allPacks();
+  return ps.find((p) => p.id === state.pbPack) || ps[0];
+}
+
+/* 每个包各自缓存一份扁平索引 */
+const PB_CACHE = {};
 function pbAll() {
-  if (!PB_IDX) {
-    PB_IDX = [];
-    phrasebook().forEach((item, i) => {
-      PB_IDX.push({
-        i, cn: item.cn, en: item.variants[0].en, keys: item.keys,
-        note: item.variants[0].tip, scene: item.variants[0].scene, cat: item._cat,
-        _idx: buildIndex({ cn: item.cn, en: item.variants[0].en, tags: item.keys, natural: item.variants[0].tip })
+  const pack = curPack();
+  if (!PB_CACHE[pack.id]) {
+    const arr = [];
+    (pack.cats || []).forEach((cat) => {
+      (cat.items || []).forEach(([cn, en, keys, note]) => {
+        arr.push({
+          cn, en, keys: keys || [], note: note || '',
+          scene: cat.scene || 'other', cat: cat.name,
+          _idx: buildIndex({ cn, en, tags: keys, natural: note || '' })
+        });
       });
     });
+    PB_CACHE[pack.id] = arr;
   }
-  return PB_IDX;
+  return PB_CACHE[pack.id];
 }
 
 function pbRow(x, savedEn) {
@@ -82,14 +97,14 @@ function pbRow(x, savedEn) {
   const n = el(`<div class="entry pb">
       <div class="en">${esc(x.en)}</div>
       <div class="cn">${esc(x.cn)}</div>
-      ${x.note ? `<div class="tip">💡 ${esc(x.note)}</div>` : ''}
+      ${x.note ? `<div class="tip">${ico('bulb')} ${esc(x.note)}</div>` : ''}
       <div class="meta">
         <span class="chip mini scene">${sceneIcon(x.scene)} ${sceneName(x.scene)}</span>
         <span class="chip mini src">${esc(x.cat)}</span>
         <span style="flex:1"></span>
-        <button class="btn sm ghost" data-speak>🔊</button>
+        <button class="btn sm ghost" data-speak title="朗读">${ico('sound')}</button>
         <button class="btn sm ghost" data-copy>复制</button>
-        <button class="btn sm ${saved ? 'soft' : ''}" data-save ${saved ? 'disabled' : ''}>${saved ? '已入库' : '★ 收藏'}</button>
+        <button class="btn sm ${saved ? 'soft' : ''}" data-save ${saved ? 'disabled' : ''}>${saved ? '已入库' : '收藏'}</button>
       </div>
     </div>`);
   n.querySelector('[data-speak]').onclick = () => speak(x.en);
@@ -106,7 +121,29 @@ function pbRow(x, savedEn) {
 }
 
 function renderPhrases() {
-  const cats = window.PHRASEBOOK || [];
+  const packs = allPacks();
+  const pack = curPack();
+  const cats = pack.cats || [];
+
+  /* —— 语言包选择 —— */
+  const pb = document.getElementById('pb-packs');
+  pb.innerHTML = '';
+  packs.forEach((p) => {
+    const c = el(`<button class="chip pack ${state.pbPack === p.id ? 'on' : ''}">${ico(PACK_ICONS[p.icon] || p.icon || 'book')} ${esc(p.name)}</button>`);
+    c.onclick = () => {
+      if (state.pbPack === p.id) return;
+      state.pbPack = p.id;
+      state.pbCat = 'all';
+      state.pbQ = '';
+      document.getElementById('pb-q').value = '';
+      try { localStorage.setItem('talklog-pack', p.id); } catch { }
+      renderPhrases();
+      window.scrollTo({ top: 0 });
+    };
+    pb.appendChild(c);
+  });
+
+  /* —— 包内分类 —— */
   const box = document.getElementById('pb-cats');
   box.innerHTML = '';
   const mk = (id, text) => {
@@ -115,7 +152,7 @@ function renderPhrases() {
     return c;
   };
   box.appendChild(mk('all', '全部'));
-  cats.forEach((cat) => box.appendChild(mk(cat.id, `${cat.icon} ${cat.name}`)));
+  cats.forEach((cat) => box.appendChild(mk(cat.id, esc(cat.name))));
 
   const all = pbAll();
   const searching = !!state.pbQ.trim();
@@ -128,10 +165,10 @@ function renderPhrases() {
     let list = all.filter((x) => state.pbCat === 'all' || cats.find((c) => c.id === state.pbCat)?.name === x.cat);
     if (searching) list = searchEntries(list, state.pbQ).map((r) => r.e);
     document.getElementById('pb-count').textContent = searching
-      ? `匹配到 ${list.length} 句`
-      : `${cats.find((c) => c.id === state.pbCat)?.name || ''} · 共 ${list.length} 句 · 点★即可收进积累库`;
+      ? `匹配到 ${list.length} 句（当前包：${pack.name}）`
+      : `${cats.find((c) => c.id === state.pbCat)?.name || ''} · 共 ${list.length} 句 · 点「收藏」即可收进积累库`;
     if (!list.length) {
-      wrap.innerHTML = `<div class="empty"><span class="big">🔎</span>没找到，换个关键词试试<br><span class="muted">支持中文意思、英文单词、场景名</span></div>`;
+      wrap.innerHTML = `<div class="empty"><span class="big">${ico('search')}</span>没找到，换个关键词试试<br><span class="muted">支持中文意思、英文单词、场景名</span></div>`;
       return;
     }
     list.forEach((x) => wrap.appendChild(pbRow(x, savedEn)));
@@ -141,7 +178,7 @@ function renderPhrases() {
   /* —— 默认浏览：按类别分组，全部展开，可逐组折叠 —— */
   const openCount = cats.filter((c) => state.pbOpen[c.id] !== false).length;
   document.getElementById('pb-count').innerHTML =
-    `共 ${all.length} 句 · ${openCount}/${cats.length} 组展开 · 点组标题可折叠，点★收藏`;
+    `<b>${esc(pack.name)}</b>${pack.desc ? ` · ${esc(pack.desc)}` : ''} · 共 ${all.length} 句 · ${openCount}/${cats.length} 组展开`;
 
   cats.forEach((cat) => {
     const items = all.filter((x) => x.cat === cat.name);
@@ -149,8 +186,7 @@ function renderPhrases() {
     const open = state.pbOpen[cat.id] !== false;
     const g = el(`<div class="pb-group ${open ? '' : 'closed'}">
       <header class="pb-head">
-        <span class="caret">▾</span>
-        <span class="pb-ico">${cat.icon}</span>
+        <span class="caret">${ico('chevron')}</span>
         <b>${esc(cat.name)}</b>
         <span class="muted">${items.length} 句</span>
         <span style="flex:1"></span>
@@ -175,7 +211,7 @@ function renderCaptureScenes() {
   all.onclick = () => { state.capScene = ''; renderCaptureScenes(); };
   box.appendChild(all);
   SCENES.forEach((s) => {
-    const c = el(`<button class="chip ${state.capScene === s.id ? 'on' : ''}" data-s="${s.id}">${s.icon} ${s.name}</button>`);
+    const c = el(`<button class="chip ${state.capScene === s.id ? 'on' : ''}" data-s="${s.id}">${sceneIcon(s.id)} ${s.name}</button>`);
     c.onclick = () => { state.capScene = state.capScene === s.id ? '' : s.id; renderCaptureScenes(); };
     box.appendChild(c);
   });
@@ -205,10 +241,10 @@ function renderVariants(out, cn, res) {
   /* AI 已配置但失败：绝不拿本地句子冒充翻译。给出原因 + 用户自己选 */
   if (!res.variants.length && res.aiError) {
     out.innerHTML = `<div class="card">
-      <div class="banner warn">⚠️ 大模型没能用上，本次没有生成翻译<br>
+      <div class="banner warn">大模型没能用上，本次没有生成翻译<br>
         <span class="muted">${esc(String(res.aiError).slice(0, 200))}</span></div>
       <div class="muted" style="font-size:13px;line-height:1.6">常见原因：接口地址不对（应如 <b>https://api.deepseek.com</b>，程序会自动补 <b>/v1</b>）、Key 失效、模型名写错、或该服务商不允许网页直连。<br>
-      去「⚙️ 设置 → 测试连接」可以直接定位。</div>
+      去「设置 → 测试连接」可以直接定位。</div>
       <div class="btn-row" style="margin-top:12px">
         <button class="btn sm" id="cap-retry">重试</button>
         ${res.localHit ? `<button class="btn sm ghost" id="cap-local">看本地近似说法</button>` : ''}
@@ -223,7 +259,7 @@ function renderVariants(out, cn, res) {
   }
   if (!res.variants.length) {
     out.innerHTML = `<div class="card">
-      <div class="empty"><span class="big">🤔</span>本地语料库里没有贴切的说法，<b>宁可不给你也不给错的</b>。<br>
+      <div class="empty"><span class="big">${ico('search')}</span>本地语料库里没有贴切的说法，<b>宁可不给你也不给错的</b>。<br>
       换个更短的说法试试，或在设置里接入大模型来生成任意中文。</div>
       <div class="btn-row"><button class="btn ghost sm" id="cap-manual">手动添加这条</button></div>
     </div>`;
@@ -231,13 +267,13 @@ function renderVariants(out, cn, res) {
     return;
   }
   const head = res.source === 'ai'
-    ? `<div class="banner ok">✨ ${res.viaBackup
+    ? `<div class="banner ok">${res.viaBackup
         ? `${esc(res.fellFrom || '主用服务商')} 连不上，已自动切换到<b>备用：${esc(res.provider || '')}</b>`
         : `大模型生成 · ${esc(res.provider || '')}`} · 已按“随意 → 正式”排序，逐条核对后收藏</div>`
     : res.matched && res.matched !== cn
       ? `<div class="banner">本地近似说法：${esc(res.matched)}　<span class="muted">（不是同义句，注意核对意思）</span></div>`
       : `<div class="banner">来自本地语料库　<span class="muted">（离线可用，无需联网）</span></div>`;
-  const errHead = res.aiError ? `<div class="banner warn">⚠️ 大模型没能用上：${esc(String(res.aiError).slice(0, 160))}<br>
+  const errHead = res.aiError ? `<div class="banner warn">大模型没能用上：${esc(String(res.aiError).slice(0, 160))}<br>
     <span class="muted">下面是本地匹配的结果，<b>仅供参考，不一定是你要的意思</b>。</span></div>` : '';
 
   out.innerHTML = errHead + head + `<div class="section-title">共 ${res.variants.length} 种说法 · 勾选要收藏的</div>`;
@@ -253,10 +289,10 @@ function renderVariants(out, cn, res) {
         <span class="chip mini scene">${sceneIcon(v.scene)} ${sceneName(v.scene)}</span>
       </div>
       ${v.back ? `<div class="back">回译核对：${esc(v.back)}</div>` : ''}
-      ${v.tip ? `<div class="tip">💡 ${esc(v.tip)}</div>` : ''}
+      ${v.tip ? `<div class="tip">${ico('bulb')} ${esc(v.tip)}</div>` : ''}
       ${v.example ? `<div class="ex muted">${esc(v.example)}</div>` : ''}
       <div class="acts">
-        <button class="btn sm ghost" data-speak>🔊 朗读</button>
+        <button class="btn sm ghost" data-speak>${ico('sound')} 朗读</button>
         <button class="btn sm ghost" data-copy>复制</button>
       </div>
     </div>`);
@@ -348,12 +384,15 @@ async function runOCR(file) {
   bar.style.width = '4%';
   status.textContent = '准备中…';
   try {
-    const small = await downscale(file);
-    const text = await recognize(small, (p, s) => { bar.style.width = Math.round(p * 100) + '%'; status.textContent = s; });
+    const text = await recognize(file, (p, s) => { bar.style.width = Math.round(p * 100) + '%'; status.textContent = s; });
     bar.style.width = '100%';
     status.textContent = `识别完成，共 ${text.trim().length} 个字符`;
     const cleaned = cleanText(text);
     document.getElementById('ocr-raw').value = cleaned;
+    if (!cleaned.trim()) {
+      status.textContent = '识别完成，但没有提取到可信的英文——换一张更清晰、文字更大的截图试试';
+      toast('没识别出有效英文，建议换清晰截图', 2600);
+    }
     renderSents(splitSentences(cleaned));
   } catch (e) {
     status.textContent = '识别失败：' + e.message;
@@ -366,7 +405,7 @@ function renderSents(sents) {
   const box = document.getElementById('ocr-sents');
   document.getElementById('ocr-cards').innerHTML = '';
   if (!sents.length) {
-    box.innerHTML = `<div class="card"><div class="empty"><span class="big">🔍</span>没有拆出可用的句子。<br>可以在上方文本框手动修改后再点「重新分句」。</div></div>`;
+    box.innerHTML = `<div class="card"><div class="empty"><span class="big">${ico('search')}</span>没有拆出可用的句子。<br>可以在上方文本框手动修改后再点「重新分句」。</div></div>`;
     return;
   }
   box.innerHTML = `<div class="section-title">勾选真正想学的句子（${sents.length} 句）</div>`;
@@ -403,16 +442,16 @@ function renderCards(items, source) {
   items.forEach((it, i) => {
     const n = el(`<div class="card tight">
       <div class="row"><div class="en" style="flex:1;font-weight:650">${esc(it.en)}</div>
-        <button class="btn sm ghost" data-speak>🔊</button></div>
+        <button class="btn sm ghost" data-speak>${ico('sound')}</button></div>
       <label class="field" style="margin-top:10px"><span>中文意思</span>
         <input type="text" data-cn value="${esc(it.cn)}" placeholder="用中文写下这句话的意思"></label>
       <label class="field"><span>自然改写（更口语的说法）</span>
         <input type="text" data-nat value="${esc(it.natural)}" placeholder="可留空"></label>
       <label class="field"><span>场景</span>
-        <select data-scene>${SCENES.map((s) => `<option value="${s.id}" ${it.scene === s.id ? 'selected' : ''}>${s.icon} ${s.name}</option>`).join('')}</select></label>
+        <select data-scene>${SCENES.map((s) => `<option value="${s.id}" ${it.scene === s.id ? 'selected' : ''}>${s.name}</option>`).join('')}</select></label>
       <label class="field"><span>来源（剧名 / 博主 / 场合）</span>
         <input type="text" data-src placeholder="例：《Friends》S01E02、机场指示牌"></label>
-      ${it.tip ? `<div class="tip muted">💡 ${esc(it.tip)}</div>` : ''}
+      ${it.tip ? `<div class="tip muted">${ico('bulb')} ${esc(it.tip)}</div>` : ''}
     </div>`);
     n.querySelector('[data-speak]').onclick = () => speak(it.en);
     list.appendChild(n);
@@ -463,7 +502,7 @@ function renderLibrary() {
     return c;
   };
   sc.appendChild(mk('all', '全部', state.scene === 'all'));
-  SCENES.forEach((s) => sc.appendChild(mk(s.id, `${s.icon} ${s.name}`, state.scene === s.id)));
+  SCENES.forEach((s) => sc.appendChild(mk(s.id, `${sceneIcon(s.id)} ${s.name}`, state.scene === s.id)));
 
   const tagBox = document.getElementById('lib-tags');
   const tags = [...new Set(state.entries.flatMap((e) => e.tags || []))].slice(0, 14);
@@ -479,7 +518,7 @@ function renderLibrary() {
   const box = document.getElementById('lib-list');
   box.innerHTML = '';
   if (!list.length) {
-    box.innerHTML = `<div class="empty"><span class="big">🌱</span>这里还空着。<br>先去「快速记录」存下第一句吧。</div>`;
+    box.innerHTML = `<div class="empty"><span class="big">${ico('sprout')}</span>这里还空着。<br>先去「快速记录」存下第一句吧。</div>`;
     return;
   }
   box.appendChild(el(`<div class="section-title">${list.length} 条</div>`));
@@ -500,8 +539,14 @@ function entryNode(e, editable) {
       <span class="chip mini src">${esc(sourceLabel(e))}</span>
       ${(e.tags || []).map((t) => `<span class="chip mini">#${esc(t)}</span>`).join('')}
       <span class="chip mini ${mastered ? 'ok' : due ? 'due' : ''}">${mastered ? '✓ 已掌握' : dueIn(e)}</span>
+      <span style="flex:1"></span>
+      ${e.en ? `<button class="btn sm ghost" data-speak title="朗读">${ico('sound')}</button>` : ''}
     </div>
   </div>`);
+  n.querySelector('[data-speak]')?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    speak(e.en);
+  });
   if (editable) n.onclick = () => openEditor(e);
   return n;
 }
@@ -523,7 +568,7 @@ function openEditor(entry, preset = {}) {
     <label class="field"><span>自然改写（更口语的说法，可留空）</span><input type="text" data-nat value="${esc(e.natural)}"></label>
     <label class="field"><span>例句 / 语境</span><input type="text" data-ex value="${esc(e.example)}"></label>
     <label class="field"><span>使用提醒</span><input type="text" data-note value="${esc(e.note)}"></label>
-    <label class="field"><span>场景</span><select data-scene>${SCENES.map((s) => `<option value="${s.id}" ${e.scene === s.id ? 'selected' : ''}>${s.icon} ${s.name}</option>`).join('')}</select></label>
+    <label class="field"><span>场景</span><select data-scene>${SCENES.map((s) => `<option value="${s.id}" ${e.scene === s.id ? 'selected' : ''}>${s.name}</option>`).join('')}</select></label>
     <label class="field"><span>来源</span><input type="text" data-src value="${esc(e.sourceNote)}" placeholder="例：同事会议 / 《Friends》"></label>
     <label class="field"><span>自由标签（逗号分隔）</span><input type="text" data-tags value="${esc((e.tags || []).join('，'))}"></label>
     <div class="btn-row">
@@ -562,6 +607,111 @@ function openEditor(entry, preset = {}) {
   });
 }
 
+/* ============ 粘贴英文保存（自动匹配中文） ============ */
+/** 没接 AI 时的兜底：拿这句话去内置语料里找英文最接近的那条，取出中文意思 */
+function localMatchCn(en) {
+  const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9' ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const target = norm(en);
+  if (!target) return '';
+  const tw = target.split(' ');
+  const pool = [...phrasebook(), ...corpus()];
+  let best = null, bestScore = 0;
+  for (const item of pool) {
+    for (const v of item.variants || []) {
+      const vn = norm(v.en);
+      if (!vn) continue;
+      const vw = vn.split(' ');
+      const set = new Set(vw);
+      let hit = 0;
+      tw.forEach((w) => { if (set.has(w)) hit++; });
+      const score = (2 * hit) / (tw.length + vw.length || 1);
+      if (score > bestScore) { bestScore = score; best = item; }
+    }
+  }
+  return bestScore >= 0.72 && best ? best.cn : '';
+}
+
+function openPasteSave() {
+  const node = el(`<div>
+    <div class="muted" style="font-size:12px;line-height:1.7;margin-bottom:8px">
+      粘贴英文（一句一行，或整段都能拆）。接了大模型会自动补中文意思与更口语的说法；没接也能先存，中文可以稍后补。
+    </div>
+    <textarea id="ps-in" rows="6" placeholder="例：Could you walk me through the process?"></textarea>
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn" id="ps-go" style="flex:1">自动匹配并预览</button>
+      <button class="btn ghost sm close-sheet">取消</button>
+    </div>
+    <div id="ps-out"></div>
+  </div>`);
+  const s = sheet('粘贴英文保存', node);
+  const out = node.querySelector('#ps-out');
+  let items = [];
+
+  node.querySelector('#ps-go').onclick = async () => {
+    const raw = node.querySelector('#ps-in').value;
+    if (!raw.trim()) { toast('先粘贴英文内容'); return; }
+    const btn = node.querySelector('#ps-go');
+    btn.disabled = true; btn.textContent = '匹配中…';
+    try {
+      let sents = splitSentences(cleanText(raw));
+      if (!sents.length) {
+        sents = raw.split(/\n+/)
+          .map((x) => x.replace(/^\s*\d+[.)、]\s*/, '').trim())
+          .filter((x) => (x.match(/[A-Za-z]/g) || []).length >= 2);
+      }
+      if (!sents.length) { toast('没识别出英文，检查一下粘贴内容'); return; }
+      const { items: got, source } = await enrichSentences(sents.slice(0, 60));
+      items = got.map((it) => ({ ...it, cn: it.cn || localMatchCn(it.en) }));
+      renderPreview(source, raw.trim());
+    } catch (e) {
+      toast('匹配失败：' + (e && e.message ? e.message : '未知错误'));
+    } finally {
+      btn.disabled = false; btn.textContent = '自动匹配并预览';
+    }
+  };
+
+  const renderPreview = (source, raw) => {
+    out.innerHTML = `<div class="section-title">${items.length} 句 · ${source === 'ai' ? '已自动补全中文' : '未接 AI，已用内置语料匹配'}</div>`;
+    const list = el('<div></div>');
+    items.forEach((it, i) => {
+      const n = el(`<div class="card tight" data-i="${i}">
+        <div class="row"><div class="en" style="flex:1;font-weight:650">${esc(it.en)}</div>
+          <button class="btn sm ghost" data-say title="朗读">${ico('sound')}</button></div>
+        <label class="field" style="margin-top:10px"><span>中文意思</span>
+          <input type="text" data-cn value="${esc(it.cn || '')}" placeholder="留空也能先存"></label>
+        <label class="field"><span>场景</span>
+          <select data-scene>${SCENES.map((x) => `<option value="${x.id}" ${it.scene === x.id ? 'selected' : ''}>${x.name}</option>`).join('')}</select></label>
+      </div>`);
+      n.querySelector('[data-say]').onclick = () => speak(it.en);
+      list.appendChild(n);
+    });
+    out.appendChild(list);
+    const bar = el(`<div class="btn-row" style="margin:8px 0 4px">
+      <button class="btn" id="ps-save" style="flex:1">全部保存到积累库</button>
+    </div>`);
+    bar.querySelector('#ps-save').onclick = async () => {
+      const nodes = [...list.querySelectorAll('.card')];
+      const entries = nodes.map((n) => {
+        const i = +n.dataset.i;
+        const cn = n.querySelector('[data-cn]').value.trim();
+        const scene = n.querySelector('[data-scene]').value;
+        const e = toEntry({ en: items[i].en, scene, natural: items[i].natural || '', tip: '' }, cn, 'manual', { sourceNote: '粘贴导入' });
+        e.natural = items[i].natural || '';
+        e.alts = [];
+        return e;
+      }).filter((e) => e.en);
+      if (!entries.length) { toast('没有可保存的内容'); return; }
+      await Store.putMany(entries);
+      await load();
+      updateSub();
+      renderLibrary();
+      s.close();
+      toast(`已保存 ${entries.length} 条${entries.some((e) => !e.cn) ? '（中文空的可以点进去补）' : ''}`);
+    };
+    out.appendChild(bar);
+  };
+}
+
 /* ============ 页面四：练习 ============ */
 async function renderDailyCard() {
   const box = document.getElementById('d-stats');
@@ -569,13 +719,13 @@ async function renderDailyCard() {
   const btn = document.getElementById('d-start');
   if (!box) return;
   const prog = await dayProgress();
-  const total = phraseItems().length + state.entries.filter((e) => e.en && e.cn).length;
+  const total = phraseItems(state.pbPack).length + state.entries.filter((e) => e.en && e.cn).length;
   box.innerHTML = `
     <div class="stat"><b style="color:var(--fjord)">${prog.done}</b><span>今日已过</span></div>
     <div class="stat"><b style="color:#4E7A5C">${prog.right}</b><span>答对</span></div>
     <div class="stat"><b style="color:var(--rose)">${prog.wrong}</b><span>答错</span></div>`;
   const left = Math.max(0, DAILY_SIZE - prog.done);
-  note.innerHTML = `每天 ${DAILY_SIZE} 条：常用100句 + 积累库混合，给中文写出/说出英文。<b>答对即过，答错的题本轮还会再出现</b>（之后的几天也更容易被抽到）。题池共 ${total} 条，今天还剩 ${left} 条。`;
+  note.innerHTML = `每天 ${DAILY_SIZE} 条：「${esc(curPack().name)}」+ 积累库混合，给中文写出/说出英文。<b>答对即过，答错的题本轮还会再出现</b>（之后的几天也更容易被抽到）。题池共 ${total} 条，今天还剩 ${left} 条。`;
   btn.textContent = prog.done ? `继续今日滚动（还剩 ${left} 条）` : '开始今日滚动';
   btn.onclick = startDaily;
 }
@@ -591,7 +741,7 @@ function renderPractice() {
   };
   mk('全部', !state.dueOnly, () => (state.dueOnly = false));
   mk('只看待复习', state.dueOnly, () => (state.dueOnly = !state.dueOnly));
-  SCENES.forEach((sc) => mk(sc.icon + ' ' + sc.name, state.scene === sc.id, () => (state.scene = state.scene === sc.id ? 'all' : sc.id)));
+  SCENES.forEach((sc) => mk(sceneIcon(sc.id) + ' ' + sc.name, state.scene === sc.id, () => (state.scene = state.scene === sc.id ? 'all' : sc.id)));
   if (state.scene !== 'all') mk('✕ 清除场景', false, () => (state.scene = 'all'));
 
   const results = searched();
@@ -603,7 +753,7 @@ function renderPractice() {
   const box = document.getElementById('p-list');
   box.innerHTML = '';
   if (!list.length) {
-    box.innerHTML = `<div class="empty"><span class="big">${state.q ? '🔎' : '🎯'}</span>${state.q ? '没找到，换个说法再搜搜' : '还没有积累，先去记录一两句'}</div>`;
+    box.innerHTML = `<div class="empty"><span class="big">${ico(state.q ? 'search' : 'target')}</span>${state.q ? '没找到，换个说法再搜搜' : '还没有积累，先去记录一两句'}</div>`;
     return;
   }
   box.appendChild(el(`<div class="section-title">${list.length} 条</div>`));
@@ -623,7 +773,7 @@ function startPractice(list) {
 let drill = null;
 
 async function startDaily() {
-  const { deck } = await buildDailyDeck(state.entries);
+  const { deck } = await buildDailyDeck(state.entries, { packId: state.pbPack });
   if (!deck.length) { toast('题池是空的：先去积累几句话，或检查常用100句'); return; }
   drill = { deck, i: 0, right: 0, wrong: 0 };
   renderDrill();
@@ -643,7 +793,7 @@ function drillTargets(it) {
 function startVoice(onText, onErr) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) {
-    onErr('这台浏览器不支持网页语音识别：可以直接打字，或用键盘上的 🎤 系统语音输入。');
+    onErr('这台浏览器不支持网页语音识别：可以直接打字，或用键盘上的麦克风键做系统语音输入。');
     return null;
   }
   const r = new SR();
@@ -676,7 +826,7 @@ function renderDrill() {
 
   root.innerHTML = `
     <div class="bar">
-      <div class="muted">${d.i + 1} / ${total} · ✅${d.right} ❌${d.wrong}</div>
+      <div class="muted">${d.i + 1} / ${total} · 对 ${d.right} / 错 ${d.wrong}</div>
       <div class="prog" style="flex:1;margin:0"><i style="width:${(d.i / total) * 100}%"></i></div>
       <button class="btn sm ghost x" id="dl-exit">退出</button>
     </div>
@@ -689,7 +839,7 @@ function renderDrill() {
           autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
         <div class="btn-row" style="margin-top:10px">
           <button class="btn" id="dl-go" style="flex:1">对答案</button>
-          <button class="btn soft" id="dl-mic" title="语音输入">🎤</button>
+          <button class="btn soft" id="dl-mic" title="语音输入">${ico('mic')}</button>
           <button class="btn ghost" id="dl-peek">看答案</button>
         </div>
         <div class="muted" id="dl-voice-note" style="text-align:center;margin-top:6px"></div>
@@ -713,10 +863,10 @@ function renderDrill() {
 
     if (mode === 'peek') {
       out.innerHTML = `<div class="dl-res no">
-        <div class="verdict">👀 参考答案</div>
+        <div class="verdict">参考答案</div>
         <div class="dl-target"><b>原句</b>：${esc(it.en)}
-          <button class="btn sm ghost" id="dl-say" style="padding:2px 10px">🔊</button></div>
-        ${it.tip ? `<div class="sub muted">💡 ${esc(it.tip)}</div>` : ''}
+          <button class="btn sm ghost" id="dl-say" style="padding:2px 10px">${ico('sound')}</button></div>
+        ${it.tip ? `<div class="sub muted">${ico('bulb')} ${esc(it.tip)}</div>` : ''}
         <div class="btn-row" style="margin-top:12px"><button class="btn" id="dl-wrong" style="flex:1">下一条（这道记为没答上）</button></div>
       </div>`;
       root.querySelector('#dl-say').onclick = () => speak(it.en);
@@ -735,10 +885,10 @@ function renderDrill() {
 
     if (r.level === 'ok') {
       out.innerHTML = `<div class="dl-res ok">
-        <div class="verdict">✅ ${r.score >= 0.98 ? '完全正确' : '意思对了（措辞略有出入）'}</div>
+        <div class="verdict">${r.score >= 0.98 ? '完全正确' : '意思对了（措辞略有出入）'}</div>
         <div class="dl-target"><b>原句</b>：${esc(it.en)}
-          <button class="btn sm ghost" id="dl-say" style="padding:2px 10px">🔊</button></div>
-        ${it.tip ? `<div class="sub muted">💡 ${esc(it.tip)}</div>` : ''}
+          <button class="btn sm ghost" id="dl-say" style="padding:2px 10px">${ico('sound')}</button></div>
+        ${it.tip ? `<div class="sub muted">${ico('bulb')} ${esc(it.tip)}</div>` : ''}
         <div class="btn-row" style="margin-top:12px"><button class="btn" id="dl-next" style="flex:1">下一条 →</button></div>
       </div>`;
       root.querySelector('#dl-say').onclick = () => speak(it.en);
@@ -750,11 +900,11 @@ function renderDrill() {
     } else {
       const pct = Math.round(r.score * 100);
       out.innerHTML = `<div class="dl-res ${r.level === 'near' ? 'near' : 'no'}">
-        <div class="verdict">${r.level === 'near' ? '🟡 很接近了（相似度 ' + pct + '%）' : '❌ 不太对（相似度 ' + pct + '%）'}</div>
+        <div class="verdict">${r.level === 'near' ? '很接近了（相似度 ' + pct + '%）' : '不太对（相似度 ' + pct + '%）'}</div>
         <div class="dl-mine"><b>你的答案</b>：${esc(val)}</div>
         ${showTarget()}
-        <div style="text-align:center"><button class="btn sm ghost" id="dl-say">🔊 听一遍</button></div>
-        ${it.tip ? `<div class="sub muted">💡 ${esc(it.tip)}</div>` : ''}
+        <div style="text-align:center"><button class="btn sm ghost" id="dl-say">${ico('sound')} 听一遍</button></div>
+        ${it.tip ? `<div class="sub muted">${ico('bulb')} ${esc(it.tip)}</div>` : ''}
         <div class="grade3">
           <button class="retry" id="dl-retry">↻ 再试一次</button>
           <button class="okbtn" id="dl-force">✓ 就这么说的</button>
@@ -808,7 +958,7 @@ function renderDrill() {
     const note = root.querySelector('#dl-voice-note');
     note.textContent = '正在听…请说英文';
     const rec = startVoice(
-      (txt) => { ta.value = txt; if (txt) note.textContent = '🎤 已识别，点「对答案」'; },
+      (txt) => { ta.value = txt; if (txt) note.textContent = '已识别，点「对答案」'; },
       (msg) => { note.textContent = msg; }
     );
     if (rec) setTimeout(() => { try { rec.stop(); } catch { } }, 8000);
@@ -832,7 +982,7 @@ async function finishDrill() {
     <p class="muted">没答上的题已经加权重排：明天更容易被抽到；答对的下一次出现会更晚。</p>
     <div class="btn-row"><button class="btn close-sheet" style="flex:1">完成</button></div>
   </div>`);
-  sheet('今日滚动完成 🎉', node);
+  sheet('今日滚动完成', node);
 }
 
 
@@ -869,9 +1019,9 @@ function renderSession() {
       <div class="en">${esc(e.en)}</div>
       ${e.natural ? `<div class="sub">↳ ${esc(e.natural)}</div>` : ''}
       ${e.example ? `<div class="sub muted">例：${esc(e.example)}</div>` : ''}
-      ${e.note ? `<div class="sub muted">💡 ${esc(e.note)}</div>` : ''}
+      ${e.note ? `<div class="sub muted">${ico('bulb')} ${esc(e.note)}</div>` : ''}
       ${(e.alts || []).length ? `<div class="sub muted">其他说法：${e.alts.map((a) => esc(a.en)).join(' / ')}</div>` : ''}
-      <div style="text-align:center;margin-top:12px"><button class="btn sm soft" id="p-say">🔊 再听一遍</button></div>
+      <div style="text-align:center;margin-top:12px"><button class="btn sm soft" id="p-say">${ico('sound')} 再听一遍</button></div>
     </div>`;
     actions.innerHTML = `<div class="grade">
       <button data-g="unknown">不会</button>
@@ -953,7 +1103,7 @@ async function openSettings() {
     <div class="btn-row"><button class="btn soft sm" id="s-test">测试两条通道</button>
       <button class="btn ghost sm" id="s-models">列出主用可用模型</button></div>
     <div class="muted" id="s-test-out" style="margin-top:8px;font-size:13px;line-height:1.6;white-space:pre-line">会分别真实请求主用和备用，各报各的结果。</div>
-    <div class="banner ok" style="margin-top:10px">🆓 <b>有三个免费档可以不花钱用</b>（有每日/每分钟次数限制，个人日常翻译完全够）。详见下方说明。</div>
+    <div class="banner ok" style="margin-top:10px"><b>有三个免费档可以不花钱用</b>（有每日/每分钟次数限制，个人日常翻译完全够）。详见下方说明。</div>
     <div class="muted" style="font-size:12px;line-height:1.7;margin-top:10px">
       <b>推荐组合：主用 Gemini（质量最好）+ 备用 硅基流动（国内直连）</b> —— 出了大陆网自动切备用，两边都不耽误。<br>
       <b>① Google Gemini（推荐·最省事，有 Gmail 就行）</b>：打开 aistudio.google.com → 用 Google 账号登录 → 左侧「Get API key」→ Create API key → 复制 AIza 开头的串。不用信用卡、不用充值。选「Google Gemini（免费）」预设即可。<span style="color:var(--rose)">注意：Google 的服务在中国大陆直连不通，需要在非大陆网络下使用。</span><br>
@@ -979,7 +1129,12 @@ async function openSettings() {
       <button class="btn ghost sm" id="s-seed">塞入示例表达</button>
       <button class="btn ghost sm" id="s-clear" style="color:var(--rose)">清空全部</button>
     </div>
-    <div class="muted" style="margin-top:10px">共 ${st.total} 条。数据只存在这台设备的浏览器里。</div>
+    <div class="muted" style="margin-top:10px">共 ${st.total} 条。数据只存在这台设备的浏览器里。<b>更新程序不会动这些数据</b>，但换域名、清缓存、换设备会。</div>
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn soft sm" id="s-snap">立即备份快照</button>
+      <button class="btn ghost sm" id="s-restore">恢复最近快照</button>
+    </div>
+    <div class="muted" id="s-snap-out" style="margin-top:8px;font-size:13px;line-height:1.6">每天自动留一份本地快照，保留最近 7 天。</div>
     <hr class="sep">
     <div class="section-title" style="margin-top:0">关于</div>
     <div class="muted" id="s-ver" style="font-size:13px;line-height:1.6">正在读取版本…</div>
@@ -989,7 +1144,7 @@ async function openSettings() {
   const s = sheet('设置', node);
   const verNode = node.querySelector('#s-ver');
   appVersion().then((v) => {
-    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v18</b><br>
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v19</b><br>
     若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
   });
   const presetSel = node.querySelector('[data-preset]');
@@ -1030,7 +1185,7 @@ async function openSettings() {
     urlIn.value = c.url; bUrlIn.value = b.url;   // 回显纠正后的地址
     const rs = await testBothLLM();
     out.innerHTML = rs
-      .map((r) => `${r.ok ? '✅' : '❌'} <b>${esc(r.which)}·${esc(r.label)}</b>：${esc(r.msg)}`)
+      .map((r) => `${r.ok ? '通过' : '失败'} · <b>${esc(r.which)}·${esc(r.label)}</b>：${esc(r.msg)}`)
       .join('\n');
     out.style.color = rs.some((r) => r.ok) ? 'var(--fjord)' : 'var(--rose)';
   };
@@ -1062,7 +1217,7 @@ async function openSettings() {
       bModelIn.value = b2.model || ''; node.querySelector('[data-bkey]').value = b2.key || '';
       node.querySelector('[data-bon]').checked = b2.enabled !== false;
       node.querySelector('#cfg-io').value = '';
-      out.innerHTML = `✅ 已导入并保存。主用：<b>${esc(providerLabel(c))}</b>` +
+      out.innerHTML = `已导入并保存。主用：<b>${esc(providerLabel(c))}</b>` +
         (String(b2.key || '').trim() ? ` · 备用：<b>${esc(providerLabel(b2))}</b>` : '') +
         '。直接回翻译页试一句吧。';
       renderBanner();
@@ -1109,9 +1264,37 @@ async function openSettings() {
     await load(); renderLibrary(); updateSub();
     toast(`已加入 ${list.length} 条示例`);
   };
+  const snapOut = node.querySelector('#s-snap-out');
+  const showSnaps = async () => {
+    const list = await Store.snapshots();
+    if (!list.length) { snapOut.textContent = '还没有快照。点「立即备份快照」留一份。'; return; }
+    const latest = list[0];
+    const d = new Date(latest.at);
+    snapOut.innerHTML = `最近快照：<b>${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}</b> · ${latest.count} 条 · 共 ${list.length} 份（最多保留 7 天）`;
+  };
+  showSnaps();
+  node.querySelector('#s-snap').onclick = async () => {
+    const r = await Store.snapshot(true);
+    await showSnaps();
+    toast(r ? `已备份 ${r.count} 条` : '当前没有数据可备份');
+  };
+  node.querySelector('#s-restore').onclick = async () => {
+    const list = await Store.snapshots();
+    if (!list.length) { toast('还没有快照可用'); return; }
+    const ok = await confirmSheet('恢复最近的快照？', `快照时间：${new Date(list[0].at).toLocaleString('zh-CN')}，${list[0].count} 条。会把快照里的内容写回来（新增的条目保留，不会删）。`, '恢复');
+    if (!ok) return;
+    const n = await Store.restoreSnapshot(list[0].key);
+    await load(); renderLibrary(); updateSub();
+    toast(`已从快照恢复 ${n} 条`);
+  };
   node.querySelector('#s-clear').onclick = async () => {
-    const ok = await confirmSheet('清空全部表达？', '此操作不可撤销，建议先导出备份。', '清空');
-    if (ok) { await Store.clear(); await load(); renderLibrary(); updateSub(); s.close(); toast('已清空'); }
+    const ok = await confirmSheet('清空全部表达？', '会先自动留一份快照，误删可从快照恢复。', '清空');
+    if (ok) {
+      await Store.snapshot(true);          // 先留退路，再清
+      await Store.clear();
+      await load(); renderLibrary(); updateSub(); s.close();
+      toast('已清空（可从快照恢复）');
+    }
   };
   node.querySelector('.close-sheet').onclick = async () => {
     await saveLLMConfig(collect());
@@ -1134,17 +1317,17 @@ async function renderBanner() {
   const ver = await appVersion();
   let html;
   if (st.ai && st.primaryDown && st.hasBackup) {
-    html = `<div class="banner warn">🔁 主用「${esc(st.primaryLabel)}」刚才连不上，已自动切换到<b>备用：${esc(st.backupLabel)}</b>　<span class="muted">${esc(ver)}</span></div>`;
+    html = `<div class="banner warn">主用「${esc(st.primaryLabel)}」刚才连不上，已自动切换到<b>备用：${esc(st.backupLabel)}</b>　<span class="muted">${esc(ver)}</span></div>`;
   } else if (st.ai && st.hasBackup) {
-    html = `<div class="banner ok">✨ AI 已开启：主用 <b>${esc(st.primaryLabel)}</b> · 备用 <b>${esc(st.backupLabel)}</b>（主用失败自动切换）　<span class="muted">${esc(ver)}</span></div>`;
+    html = `<div class="banner ok">AI 已开启：主用 <b>${esc(st.primaryLabel)}</b> · 备用 <b>${esc(st.backupLabel)}</b>（主用失败自动切换）　<span class="muted">${esc(ver)}</span></div>`;
   } else if (st.ai) {
-    html = `<div class="banner ok">✨ AI 增强已开启：<b>${esc(st.model)}</b> · 任意中文都能翻译。<a href="#" id="to-settings" style="color:var(--fjord);font-weight:700">建议再配个备用 →</a>　<span class="muted">${esc(ver)}</span></div>`;
+    html = `<div class="banner ok">AI 增强已开启：<b>${esc(st.model)}</b> · 任意中文都能翻译。<a href="#" id="to-settings" style="color:var(--fjord);font-weight:700">建议再配个备用 →</a>　<span class="muted">${esc(ver)}</span></div>`;
   } else if (st.hasBackup) {
-    html = `<div class="banner ok">✨ AI 已开启（走<b>备用：${esc(st.backupLabel)}</b>）· 主用未配置，建议在设置里补上　<span class="muted">${esc(ver)}</span></div>`;
+    html = `<div class="banner ok">AI 已开启（走<b>备用：${esc(st.backupLabel)}</b>）· 主用未配置，建议在设置里补上　<span class="muted">${esc(ver)}</span></div>`;
   } else if (st.incomplete) {
-    html = `<div class="banner warn">⚠️ AI 配置不完整（${esc(st.missing.join('、'))}没填），所以翻译不出来。<a href="#" id="to-settings" style="color:var(--fjord);font-weight:700">去设置补全 →</a>　<span class="muted">${esc(ver)}</span></div>`;
+    html = `<div class="banner warn">AI 配置不完整（${esc(st.missing.join('、'))}没填），所以翻译不出来。<a href="#" id="to-settings" style="color:var(--fjord);font-weight:700">去设置补全 →</a>　<span class="muted">${esc(ver)}</span></div>`;
   } else {
-    html = `<div class="banner">📴 离线语料库模式 · 内置 ${corpus().length} 组说法，贴不上就不硬凑。<a href="#" id="to-settings" style="color:var(--fjord);font-weight:700">接入大模型 →</a>　<span class="muted">${esc(ver)}</span></div>`;
+    html = `<div class="banner">离线语料库模式 · 内置 ${corpus().length} 组说法，贴不上就不硬凑。<a href="#" id="to-settings" style="color:var(--fjord);font-weight:700">接入大模型 →</a>　<span class="muted">${esc(ver)}</span></div>`;
   }
   box.innerHTML = html;
   box.querySelector('#to-settings')?.addEventListener('click', (e) => { e.preventDefault(); openSettings(); });
@@ -1201,6 +1384,7 @@ async function boot() {
   document.getElementById('btn-settings').onclick = openSettings;
   document.getElementById('cap-go').onclick = onGenerate;
   document.getElementById('lib-add').onclick = () => openEditor(null);
+  document.getElementById('lib-paste').onclick = openPasteSave;
   const q = document.getElementById('p-q');
   let timer = null;
   q.addEventListener('input', () => {
@@ -1224,7 +1408,7 @@ async function boot() {
   renderBanner();
   if (imported) {
     renderBanner();
-    setTimeout(() => toast('✅ AI 配置已自动导入，可直接翻译'), 600);
+    setTimeout(() => toast('AI 配置已自动导入，可直接翻译'), 600);
   }
 
   const fromHash = () => {

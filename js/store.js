@@ -1,8 +1,10 @@
 /* 本地存储（IndexedDB）：表达条目 + 设置 */
+import { ico, SCENE_ICONS } from './icons.js';
 const DB_NAME = 'pocket-english';
 const DB_VER = 1;
 const STORE = 'entries';
 const KV = 'kv';
+const SNAP_KEEP = 7;
 
 let _db = null;
 
@@ -68,6 +70,37 @@ export const Store = {
     const os = await tx(STORE, 'readwrite');
     return wrap(os.clear());
   },
+  /* ---- 快照：每天留一份，防误操作/升级意外，保留最近 7 天 ---- */
+  async snapshots() {
+    const idx = await this.getKV('snap-index', null);
+    return Array.isArray(idx) ? idx : [];
+  },
+  async snapshot(force = false) {
+    const items = await this.all();
+    if (!items.length && !force) return null;
+    const today = new Date().toISOString().slice(0, 10);
+    const key = 'snap:' + today;
+    const idx = await this.snapshots();
+    const exist = idx.find((s) => s.key === key);
+    if (exist && !force) return exist;
+    const at = Date.now();
+    await this.setKV(key, { at, items: items.map(cleanEntry) });
+    const next = [{ key, at, count: items.length }, ...idx.filter((s) => s.key !== key)].slice(0, SNAP_KEEP);
+    await this.setKV('snap-index', next);
+    const keep = new Set(next.map((s) => s.key));
+    for (const s of idx) if (!keep.has(s.key)) await this.setKV(s.key, null);
+    return next[0];
+  },
+  async restoreSnapshot(key) {
+    const snap = await this.getKV(key, null);
+    if (!snap || !Array.isArray(snap.items)) return 0;
+    await this.putMany(snap.items.map((e) => ({
+      ...e,
+      id: e.id || uid(),
+      srs: e.srs || newSRS()
+    })));
+    return snap.items.length;
+  },
   async getKV(key, fallback = null) {
     const os = await tx(KV, 'readonly');
     const v = await wrap(os.get(key));
@@ -88,16 +121,16 @@ function cleanEntry(e) {
 }
 
 export const SCENES = [
-  { id: 'work', name: '工作', icon: '💼' },
-  { id: 'social', name: '社交', icon: '💬' },
-  { id: 'travel', name: '旅行', icon: '✈️' },
-  { id: 'daily', name: '日常', icon: '☕️' },
-  { id: 'media', name: '影视', icon: '🎬' },
-  { id: 'other', name: '其他', icon: '🧩' }
+  { id: 'work', name: '工作' },
+  { id: 'social', name: '社交' },
+  { id: 'travel', name: '旅行' },
+  { id: 'daily', name: '日常' },
+  { id: 'media', name: '影视' },
+  { id: 'other', name: '其他' }
 ];
 
 export const sceneName = (id) => (SCENES.find((s) => s.id === id) || { name: '其他' }).name;
-export const sceneIcon = (id) => (SCENES.find((s) => s.id === id) || { icon: '🧩' }).icon;
+export const sceneIcon = (id) => ico(SCENE_ICONS[id] || 'shape');
 
 /* 新建条目时的默认复习状态 */
 export function newSRS() {

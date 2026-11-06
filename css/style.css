@@ -382,3 +382,21 @@ hr.sep { border: none; border-top: 1px solid var(--line); margin: 16px 0; }
 .grade3 .retry { color: var(--amber); border-color: #EBDCC0; background: #FCF6EA; }
 .grade3 .okbtn { color: #4E7A5C; border-color: #D9E9DC; background: #EDF5EF; }
 .grade3 .nextbtn { color: var(--rose); border-color: #F1DCDC; background: #FBEFEF; }
+
+/* ================= 内联 SVG 图标（替代 emoji） ================= */
+.svgi {
+  width: 1.05em; height: 1.05em; vertical-align: -.14em;
+  display: inline-block; flex: none;
+}
+.icon-btn .svgi { width: 19px; height: 19px; }
+.tabbar button .ico { display: inline-flex; line-height: 0; }
+.tabbar button .ico svg { width: 22px; height: 22px; }
+.tabbar button.on .ico svg { stroke-width: 2; }
+.empty .big .svgi { width: 34px; height: 34px; color: var(--ink-3); }
+.drop-ico { color: var(--fjord); opacity: .9; line-height: 0; }
+.drop-ico .svgi { width: 36px; height: 36px; }
+.pb-head .caret .svgi { width: 15px; height: 15px; }
+.chip .svgi { width: 1em; height: 1em; vertical-align: -.12em; }
+.chip.pack { font-weight: 600; letter-spacing: .1px; }
+.btn .svgi { width: 1.02em; height: 1.02em; vertical-align: -.16em; }
+.tip .svgi { color: var(--amber); width: .95em; height: .95em; }

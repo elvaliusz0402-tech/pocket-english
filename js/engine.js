@@ -38,15 +38,21 @@ let PB = null;
 export function phrasebook() {
   if (PB) return PB;
   PB = [];
-  (window.PHRASEBOOK || []).forEach((cat) => {
-    (cat.items || []).forEach(([cn, en, keys, note]) => {
-      const item = {
-        cn, keys: keys || [], _cat: cat.name,
-        variants: [{ en, tone: '常用', scene: cat.scene, tip: note || '' }]
-      };
-      item._idx = buildIndex({ cn, en, tags: keys, natural: note || '' });
-      item._keyStr = (keys || []).join('|');
-      PB.push(item);
+  /* 语言包结构：window.PHRASE_PACKS = [{ id, name, cats:[{id,name,items:[[cn,en,keys,note]…]}] }]
+     兼容旧结构：只定义了 window.PHRASEBOOK 时视作单个包 */
+  const packs = window.PHRASE_PACKS
+    || (window.PHRASEBOOK ? [{ id: 'daily', name: '日常用语', cats: window.PHRASEBOOK }] : []);
+  packs.forEach((pack) => {
+    (pack.cats || []).forEach((cat) => {
+      (cat.items || []).forEach(([cn, en, keys, note]) => {
+        const item = {
+          cn, keys: keys || [], _cat: cat.name, _pack: pack.id,
+          variants: [{ en, tone: '常用', scene: cat.scene || 'other', tip: note || '' }]
+        };
+        item._idx = buildIndex({ cn, en, tags: keys, natural: note || '' });
+        item._keyStr = (keys || []).join('|');
+        PB.push(item);
+      });
     });
   });
   return PB;
@@ -116,15 +122,15 @@ const COOLDOWN = 10 * 60 * 1000;       // 某通道失败后 10 分钟内先走�
    注意：moonshot-v1-8k 已于 2026-08-31 下线、deepseek-chat 于 2026-07-24 退役，填了必报 404。 */
 export const PRESETS = [
   // —— 免费档（无需信用卡，有速率限制，个人日常够用）——
-  { id: 'gemini', free: true, name: '🆓 Google Gemini（免费·质量最好）', url: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.5-flash' },
+  { id: 'gemini', free: true, name: '免费 · Google Gemini（质量最好）', url: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.5-flash' },
   // 实测 2026-10-29：GLM-4-9B-0414 约 3 秒出结果，Qwen3-8B 约 21 秒（它默认开推理），故默认用前者
-  { id: 'siliconflow', free: true, name: '🆓 硅基流动 SiliconFlow（免费·国内直连）', url: 'https://api.siliconflow.cn/v1', model: 'THUDM/GLM-4-9B-0414' },
-  { id: 'openrouter', free: true, name: '🆓 OpenRouter 免费模型池', url: 'https://openrouter.ai/api/v1', model: 'openrouter/free' },
+  { id: 'siliconflow', free: true, name: '免费 · 硅基流动 SiliconFlow（国内直连）', url: 'https://api.siliconflow.cn/v1', model: 'THUDM/GLM-4-9B-0414' },
+  { id: 'openrouter', free: true, name: '免费 · OpenRouter 免费模型池', url: 'https://openrouter.ai/api/v1', model: 'openrouter/free' },
   // —— 付费档（便宜，量大稳定）——
-  { id: 'deepseek', name: '💰 DeepSeek（付费·最便宜）', url: 'https://api.deepseek.com', model: 'deepseek-v4-flash' },
-  { id: 'moonshot', name: '💰 Moonshot / Kimi（国内站）', url: 'https://api.moonshot.cn', model: 'kimi-k3' },
-  { id: 'moonshot-intl', name: '💰 Moonshot / Kimi（国际站）', url: 'https://api.moonshot.ai', model: 'kimi-k3' },
-  { id: 'openai', name: '💰 OpenAI', url: 'https://api.openai.com', model: 'gpt-5-mini' },
+  { id: 'deepseek', name: '付费 · DeepSeek（最便宜）', url: 'https://api.deepseek.com', model: 'deepseek-v4-flash' },
+  { id: 'moonshot', name: '付费 · Moonshot / Kimi（国内站）', url: 'https://api.moonshot.cn', model: 'kimi-k3' },
+  { id: 'moonshot-intl', name: '付费 · Moonshot / Kimi（国际站）', url: 'https://api.moonshot.ai', model: 'kimi-k3' },
+  { id: 'openai', name: '付费 · OpenAI', url: 'https://api.openai.com', model: 'gpt-5-mini' },
   { id: 'custom', name: '自定义（OpenAI 兼容）', url: '', model: '' }
 ];
 
@@ -162,11 +168,10 @@ async function clearFail(which) {
   const h = await health(); delete h[which]; await Store.setKV(HEALTH_KEY, h);
 }
 
-/** 通道显示名（去掉免费/付费 emoji 前缀，界面更好读）
- *  注意：必须用 u 标志 + 码点写法，否则会把 emoji 的半个代理对切下来，显示成乱码方块 */
+/** 通道显示名（去掉免费/付费前缀，界面更好读） */
 export function providerLabel(c) {
   const p = PRESETS.find((x) => x.id === (c && c.preset));
-  if (p) return p.name.replace(/^[\u{1F193}\u{1F4B0}]\s*/u, '').trim();
+  if (p) return p.name.replace(/^(免费|付费)\s*·\s*/,'').trim();
   try { return new URL(normalizeBaseUrl(c && c.url)).hostname; } catch { return '自定义'; }
 }
 
@@ -470,6 +475,24 @@ export function cleanText(raw) {
   t = t.replace(/(\w)-\s+(\w)/g, '$1$2');
   // 多余空白
   t = t.replace(/[ \t]+/g, ' ').replace(/\n{2,}/g, '\n').trim();
+  // 重复句去重（截图里同一句被识别多遍时只留一次）
+  const parts = t.split(/(?<=[.!?])\s+/);
+  if (parts.length > 1) {
+    const keptS = [];
+    const nk = (x) => x.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+    for (const s of parts) {
+      const a = nk(s);
+      if (a.length > 12) {
+        const dup = keptS.some((b) => {
+          const bb = nk(b);
+          return a === bb || (a.length > 14 && bb.length > 14 && (bb.includes(a) || a.includes(bb)));
+        });
+        if (dup) continue;
+        keptS.push(s);
+      } else keptS.push(s);
+    }
+    t = keptS.join(' ');
+  }
   return t;
 }
 

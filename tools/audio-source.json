@@ -1,0 +1,1322 @@
+[
+ {
+  "pack": "daily",
+  "cat": "餐厅就餐",
+  "cn": "请问有两人位吗",
+  "en": "Do you have a table for two?"
+ },
+ {
+  "pack": "daily",
+  "cat": "餐厅就餐",
+  "cn": "我想订今晚七点的位子",
+  "en": "I'd like to book a table for tonight at seven."
+ },
+ {
+  "pack": "daily",
+  "cat": "餐厅就餐",
+  "cn": "我们可以点餐了吗",
+  "en": "Could we order, please?"
+ },
+ {
+  "pack": "daily",
+  "cat": "餐厅就餐",
+  "cn": "这个菜辣吗",
+  "en": "Is this dish spicy?"
+ },
+ {
+  "pack": "daily",
+  "cat": "餐厅就餐",
+  "cn": "有什么推荐的吗",
+  "en": "What do you recommend?"
+ },
+ {
+  "pack": "daily",
+  "cat": "餐厅就餐",
+  "cn": "我对花生过敏",
+  "en": "I'm allergic to peanuts."
+ },
+ {
+  "pack": "daily",
+  "cat": "餐厅就餐",
+  "cn": "请不要放香菜",
+  "en": "Could I get that without cilantro?"
+ },
+ {
+  "pack": "daily",
+  "cat": "餐厅就餐",
+  "cn": "能做得不那么辣吗",
+  "en": "Could you make it less spicy?"
+ },
+ {
+  "pack": "daily",
+  "cat": "餐厅就餐",
+  "cn": "我们分开买单",
+  "en": "Could we get separate checks, please?"
+ },
+ {
+  "pack": "daily",
+  "cat": "餐厅就餐",
+  "cn": "一起结账",
+  "en": "Could we have one check, please?"
+ },
+ {
+  "pack": "daily",
+  "cat": "餐厅就餐",
+  "cn": "这个打包",
+  "en": "Could I get this to go?"
+ },
+ {
+  "pack": "daily",
+  "cat": "餐厅就餐",
+  "cn": "买单",
+  "en": "Could we get the check, please?"
+ },
+ {
+  "pack": "daily",
+  "cat": "餐厅就餐",
+  "cn": "含服务费了吗",
+  "en": "Is the service charge included?"
+ },
+ {
+  "pack": "daily",
+  "cat": "家庭日常",
+  "cn": "该起床了",
+  "en": "Time to get up."
+ },
+ {
+  "pack": "daily",
+  "cat": "家庭日常",
+  "cn": "早餐想吃什么",
+  "en": "What do you want for breakfast?"
+ },
+ {
+  "pack": "daily",
+  "cat": "家庭日常",
+  "cn": "帮我倒杯水好吗",
+  "en": "Could you get me a glass of water?"
+ },
+ {
+  "pack": "daily",
+  "cat": "家庭日常",
+  "cn": "轮到你洗碗了",
+  "en": "It's your turn to do the dishes."
+ },
+ {
+  "pack": "daily",
+  "cat": "家庭日常",
+  "cn": "把垃圾拿出去",
+  "en": "Could you take out the trash?"
+ },
+ {
+  "pack": "daily",
+  "cat": "家庭日常",
+  "cn": "我快到家了",
+  "en": "I'm almost home."
+ },
+ {
+  "pack": "daily",
+  "cat": "家庭日常",
+  "cn": "晚饭吃什么",
+  "en": "What's for dinner?"
+ },
+ {
+  "pack": "daily",
+  "cat": "家庭日常",
+  "cn": "我先去睡了",
+  "en": "I'm heading to bed."
+ },
+ {
+  "pack": "daily",
+  "cat": "家庭日常",
+  "cn": "帮忙关一下灯",
+  "en": "Could you turn off the lights?"
+ },
+ {
+  "pack": "daily",
+  "cat": "家庭日常",
+  "cn": "看见遥控器了吗",
+  "en": "Have you seen the remote?"
+ },
+ {
+  "pack": "daily",
+  "cat": "家庭日常",
+  "cn": "我今天加班，晚点回",
+  "en": "I'm working late tonight, so I'll be home late."
+ },
+ {
+  "pack": "daily",
+  "cat": "家庭日常",
+  "cn": "周末有什么安排",
+  "en": "Any plans for the weekend?"
+ },
+ {
+  "pack": "daily",
+  "cat": "公司工作",
+  "cn": "我们开个会吧",
+  "en": "Let's set up a meeting."
+ },
+ {
+  "pack": "daily",
+  "cat": "公司工作",
+  "cn": "会议改个时间行吗",
+  "en": "Could we push the meeting back an hour?"
+ },
+ {
+  "pack": "daily",
+  "cat": "公司工作",
+  "cn": "我给你发邮件了",
+  "en": "I just sent you an email."
+ },
+ {
+  "pack": "daily",
+  "cat": "公司工作",
+  "cn": "收到，我马上看",
+  "en": "Got it — I'll take a look right away."
+ },
+ {
+  "pack": "daily",
+  "cat": "公司工作",
+  "cn": "这周内给你",
+  "en": "I'll get it to you by the end of the week."
+ },
+ {
+  "pack": "daily",
+  "cat": "公司工作",
+  "cn": "我觉得这个方案行不通",
+  "en": "I don't think this approach will work."
+ },
+ {
+  "pack": "daily",
+  "cat": "公司工作",
+  "cn": "能帮我个忙吗",
+  "en": "Could you do me a favor?"
+ },
+ {
+  "pack": "daily",
+  "cat": "公司工作",
+  "cn": "我明天想请一天假",
+  "en": "I'd like to take a day off tomorrow."
+ },
+ {
+  "pack": "daily",
+  "cat": "公司工作",
+  "cn": "现在方便说话吗",
+  "en": "Is now a good time to talk?"
+ },
+ {
+  "pack": "daily",
+  "cat": "公司工作",
+  "cn": "我进度有点落后",
+  "en": "I'm running a bit behind schedule."
+ },
+ {
+  "pack": "daily",
+  "cat": "公司工作",
+  "cn": "有问题随时找我",
+  "en": "Reach out anytime if you have questions."
+ },
+ {
+  "pack": "daily",
+  "cat": "公司工作",
+  "cn": "这个谁负责",
+  "en": "Who's in charge of this?"
+ },
+ {
+  "pack": "daily",
+  "cat": "公司工作",
+  "cn": "这个做得漂亮",
+  "en": "Nice work on this."
+ },
+ {
+  "pack": "daily",
+  "cat": "出差旅行",
+  "cn": "我是来出差的",
+  "en": "I'm here on business."
+ },
+ {
+  "pack": "daily",
+  "cat": "出差旅行",
+  "cn": "我要办理入住",
+  "en": "Hi, I'd like to check in, please."
+ },
+ {
+  "pack": "daily",
+  "cat": "出差旅行",
+  "cn": "我要退房",
+  "en": "I'd like to check out, please."
+ },
+ {
+  "pack": "daily",
+  "cat": "出差旅行",
+  "cn": "早餐几点开始",
+  "en": "What time does breakfast start?"
+ },
+ {
+  "pack": "daily",
+  "cat": "出差旅行",
+  "cn": "请问地铁站在哪里",
+  "en": "Excuse me, how do I get to the subway station?"
+ },
+ {
+  "pack": "daily",
+  "cat": "出差旅行",
+  "cn": "请送我去机场",
+  "en": "Could you take me to the airport, please?"
+ },
+ {
+  "pack": "daily",
+  "cat": "出差旅行",
+  "cn": "我赶飞机要迟到了",
+  "en": "I'm running late for my flight."
+ },
+ {
+  "pack": "daily",
+  "cat": "出差旅行",
+  "cn": "这里有无线网吗",
+  "en": "Do you have Wi-Fi here?"
+ },
+ {
+  "pack": "daily",
+  "cat": "出差旅行",
+  "cn": "我的航班延误了",
+  "en": "My flight's been delayed."
+ },
+ {
+  "pack": "daily",
+  "cat": "出差旅行",
+  "cn": "我想换点外币",
+  "en": "I'd like to exchange some money."
+ },
+ {
+  "pack": "daily",
+  "cat": "出差旅行",
+  "cn": "能开一张收据吗",
+  "en": "Could I get a receipt?"
+ },
+ {
+  "pack": "daily",
+  "cat": "出差旅行",
+  "cn": "附近有什么好吃的",
+  "en": "Any good places to eat around here?"
+ },
+ {
+  "pack": "daily",
+  "cat": "出差旅行",
+  "cn": "这个用英语怎么说",
+  "en": "How do you say this in English?"
+ },
+ {
+  "pack": "daily",
+  "cat": "购物消费",
+  "cn": "我就随便看看",
+  "en": "I'm just looking, thanks."
+ },
+ {
+  "pack": "daily",
+  "cat": "购物消费",
+  "cn": "这个多少钱",
+  "en": "How much is this?"
+ },
+ {
+  "pack": "daily",
+  "cat": "购物消费",
+  "cn": "这个有别的颜色吗",
+  "en": "Does this come in other colors?"
+ },
+ {
+  "pack": "daily",
+  "cat": "购物消费",
+  "cn": "可以试穿吗",
+  "en": "Can I try this on?"
+ },
+ {
+  "pack": "daily",
+  "cat": "购物消费",
+  "cn": "有大一号的吗",
+  "en": "Do you have this in a larger size?"
+ },
+ {
+  "pack": "daily",
+  "cat": "购物消费",
+  "cn": "有点贵",
+  "en": "That's a bit pricey."
+ },
+ {
+  "pack": "daily",
+  "cat": "购物消费",
+  "cn": "能便宜一点吗",
+  "en": "Any chance you could give me a better price?"
+ },
+ {
+  "pack": "daily",
+  "cat": "购物消费",
+  "cn": "这个在打折吗",
+  "en": "Is this on sale?"
+ },
+ {
+  "pack": "daily",
+  "cat": "购物消费",
+  "cn": "我再逛逛",
+  "en": "I'll keep looking, thanks."
+ },
+ {
+  "pack": "daily",
+  "cat": "购物消费",
+  "cn": "就要这个了",
+  "en": "I'll take it."
+ },
+ {
+  "pack": "daily",
+  "cat": "购物消费",
+  "cn": "不合适能退吗",
+  "en": "Can I return this if it doesn't fit?"
+ },
+ {
+  "pack": "daily",
+  "cat": "购物消费",
+  "cn": "这个免税吗",
+  "en": "Is this tax-free?"
+ },
+ {
+  "pack": "daily",
+  "cat": "交通出行",
+  "cn": "这趟车去市中心吗",
+  "en": "Does this bus go downtown?"
+ },
+ {
+  "pack": "daily",
+  "cat": "交通出行",
+  "cn": "我坐过站了",
+  "en": "I missed my stop."
+ },
+ {
+  "pack": "daily",
+  "cat": "交通出行",
+  "cn": "这列车停不停机场",
+  "en": "Does this train stop at the airport?"
+ },
+ {
+  "pack": "daily",
+  "cat": "交通出行",
+  "cn": "一张单程票",
+  "en": "One single ticket, please."
+ },
+ {
+  "pack": "daily",
+  "cat": "交通出行",
+  "cn": "一张往返票",
+  "en": "A return ticket, please."
+ },
+ {
+  "pack": "daily",
+  "cat": "交通出行",
+  "cn": "最近的车站在哪",
+  "en": "Where's the nearest station?"
+ },
+ {
+  "pack": "daily",
+  "cat": "交通出行",
+  "cn": "我有点迷路了",
+  "en": "I'm a bit lost."
+ },
+ {
+  "pack": "daily",
+  "cat": "交通出行",
+  "cn": "走路能到吗",
+  "en": "Is it within walking distance?"
+ },
+ {
+  "pack": "daily",
+  "cat": "交通出行",
+  "cn": "能帮我叫辆车吗",
+  "en": "Could you call a taxi for me?"
+ },
+ {
+  "pack": "daily",
+  "cat": "交通出行",
+  "cn": "到那边大概多久",
+  "en": "How long does it take to get there?"
+ },
+ {
+  "pack": "daily",
+  "cat": "交通出行",
+  "cn": "就在这儿停吧",
+  "en": "Could you drop me off here?"
+ },
+ {
+  "pack": "daily",
+  "cat": "交通出行",
+  "cn": "下一班几点",
+  "en": "What time's the next one?"
+ },
+ {
+  "pack": "daily",
+  "cat": "社交闲聊",
+  "cn": "好久不见",
+  "en": "Long time no see!"
+ },
+ {
+  "pack": "daily",
+  "cat": "社交闲聊",
+  "cn": "最近怎么样",
+  "en": "How've you been?"
+ },
+ {
+  "pack": "daily",
+  "cat": "社交闲聊",
+  "cn": "改天一起吃饭",
+  "en": "Let's grab a meal sometime."
+ },
+ {
+  "pack": "daily",
+  "cat": "社交闲聊",
+  "cn": "这周末有空吗",
+  "en": "Are you free this weekend?"
+ },
+ {
+  "pack": "daily",
+  "cat": "社交闲聊",
+  "cn": "我先走了",
+  "en": "I should get going."
+ },
+ {
+  "pack": "daily",
+  "cat": "社交闲聊",
+  "cn": "今天很开心",
+  "en": "I had a great time today."
+ },
+ {
+  "pack": "daily",
+  "cat": "社交闲聊",
+  "cn": "保持联系",
+  "en": "Let's keep in touch."
+ },
+ {
+  "pack": "daily",
+  "cat": "社交闲聊",
+  "cn": "顺路捎你一程",
+  "en": "I can give you a ride."
+ },
+ {
+  "pack": "daily",
+  "cat": "社交闲聊",
+  "cn": "你说得有道理",
+  "en": "That's a fair point."
+ },
+ {
+  "pack": "daily",
+  "cat": "社交闲聊",
+  "cn": "我没听清，再说一遍好吗",
+  "en": "Sorry, I didn't quite catch that."
+ },
+ {
+  "pack": "daily",
+  "cat": "社交闲聊",
+  "cn": "你周末一般做什么",
+  "en": "What do you usually do on weekends?"
+ },
+ {
+  "pack": "daily",
+  "cat": "社交闲聊",
+  "cn": "久仰大名",
+  "en": "I've heard a lot about you."
+ },
+ {
+  "pack": "daily",
+  "cat": "社交闲聊",
+  "cn": "太巧了",
+  "en": "What a coincidence!"
+ },
+ {
+  "pack": "daily",
+  "cat": "酒店住宿",
+  "cn": "还有空房吗",
+  "en": "Do you have any rooms available?"
+ },
+ {
+  "pack": "daily",
+  "cat": "酒店住宿",
+  "cn": "一晚多少钱",
+  "en": "How much is it per night?"
+ },
+ {
+  "pack": "daily",
+  "cat": "酒店住宿",
+  "cn": "含早餐吗",
+  "en": "Is breakfast included?"
+ },
+ {
+  "pack": "daily",
+  "cat": "酒店住宿",
+  "cn": "可以延迟退房吗",
+  "en": "Could we have a late checkout?"
+ },
+ {
+  "pack": "daily",
+  "cat": "酒店住宿",
+  "cn": "空调坏了",
+  "en": "There's something wrong with the air conditioning."
+ },
+ {
+  "pack": "daily",
+  "cat": "酒店住宿",
+  "cn": "能帮我寄存行李吗",
+  "en": "Could I leave my luggage here?"
+ },
+ {
+  "pack": "daily",
+  "cat": "酒店住宿",
+  "cn": "出门时能打扫一下房间吗",
+  "en": "Could you clean the room while I'm out?"
+ },
+ {
+  "pack": "daily",
+  "cat": "酒店住宿",
+  "cn": "空调太冷了",
+  "en": "The AC is too cold. Could you help me adjust it?"
+ },
+ {
+  "pack": "daily",
+  "cat": "酒店住宿",
+  "cn": "房间有点吵",
+  "en": "The room is a bit noisy."
+ },
+ {
+  "pack": "daily",
+  "cat": "酒店住宿",
+  "cn": "能借个充电器吗",
+  "en": "Could I borrow a phone charger?"
+ },
+ {
+  "pack": "daily",
+  "cat": "酒店住宿",
+  "cn": "早上七点能叫醒我吗",
+  "en": "Could you give me a wake-up call at seven?"
+ },
+ {
+  "pack": "daily",
+  "cat": "酒店住宿",
+  "cn": "退房后能再来取行李吗",
+  "en": "Could I pick up my luggage after checkout?"
+ },
+ {
+  "pack": "medical",
+  "cat": "问诊沟通",
+  "cn": "您哪里不舒服",
+  "en": "What seems to be the problem?"
+ },
+ {
+  "pack": "medical",
+  "cat": "问诊沟通",
+  "cn": "这种情况持续多久了",
+  "en": "How long have you had this?"
+ },
+ {
+  "pack": "medical",
+  "cat": "问诊沟通",
+  "cn": "疼痛是持续的还是间断的",
+  "en": "Is the pain constant, or does it come and go?"
+ },
+ {
+  "pack": "medical",
+  "cat": "问诊沟通",
+  "cn": "从一到十，您给疼痛打几分",
+  "en": "On a scale of one to ten, how would you rate the pain?"
+ },
+ {
+  "pack": "medical",
+  "cat": "问诊沟通",
+  "cn": "您对什么药物过敏吗",
+  "en": "Are you allergic to any medication?"
+ },
+ {
+  "pack": "medical",
+  "cat": "问诊沟通",
+  "cn": "您最近吃过什么药",
+  "en": "Have you taken any medication recently?"
+ },
+ {
+  "pack": "medical",
+  "cat": "问诊沟通",
+  "cn": "您有高血压或糖尿病吗",
+  "en": "Do you have high blood pressure or diabetes?"
+ },
+ {
+  "pack": "medical",
+  "cat": "问诊沟通",
+  "cn": "请张开嘴说啊",
+  "en": "Open your mouth and say \"ah\"."
+ },
+ {
+  "pack": "medical",
+  "cat": "问诊沟通",
+  "cn": "我给您量一下血压",
+  "en": "I'm going to take your blood pressure."
+ },
+ {
+  "pack": "medical",
+  "cat": "问诊沟通",
+  "cn": "请深呼吸",
+  "en": "Take a deep breath, please."
+ },
+ {
+  "pack": "medical",
+  "cat": "问诊沟通",
+  "cn": "我给您抽个血",
+  "en": "I'm going to draw some blood."
+ },
+ {
+  "pack": "medical",
+  "cat": "问诊沟通",
+  "cn": "结果大约两小时出来",
+  "en": "The results should be back in about two hours."
+ },
+ {
+  "pack": "medical",
+  "cat": "护理与告知",
+  "cn": "这药一天三次，饭后吃",
+  "en": "Take this three times a day, after meals."
+ },
+ {
+  "pack": "medical",
+  "cat": "护理与告知",
+  "cn": "打针会有点疼，忍一下",
+  "en": "This will sting a little."
+ },
+ {
+  "pack": "medical",
+  "cat": "护理与告知",
+  "cn": "我帮您把床头摇高一点",
+  "en": "Let me raise the head of your bed."
+ },
+ {
+  "pack": "medical",
+  "cat": "护理与告知",
+  "cn": "按这个按钮可以叫我们",
+  "en": "Press this button if you need us."
+ },
+ {
+  "pack": "medical",
+  "cat": "护理与告知",
+  "cn": "今晚零点以后不能吃东西",
+  "en": "You can't eat anything after midnight tonight."
+ },
+ {
+  "pack": "medical",
+  "cat": "护理与告知",
+  "cn": "手术前需要空腹",
+  "en": "You'll need to fast before the surgery."
+ },
+ {
+  "pack": "medical",
+  "cat": "护理与告知",
+  "cn": "有家属陪同吗",
+  "en": "Is there a family member with you?"
+ },
+ {
+  "pack": "medical",
+  "cat": "护理与告知",
+  "cn": "我们会随时观察您的情况",
+  "en": "We'll keep an eye on you."
+ },
+ {
+  "pack": "medical",
+  "cat": "护理与告知",
+  "cn": "您今天感觉好点了吗",
+  "en": "Are you feeling any better today?"
+ },
+ {
+  "pack": "medical",
+  "cat": "护理与告知",
+  "cn": "请在这里签个字",
+  "en": "Please sign here."
+ },
+ {
+  "pack": "medical",
+  "cat": "护理与告知",
+  "cn": "出院后一周来复查",
+  "en": "Come back for a follow-up in a week."
+ },
+ {
+  "pack": "medical",
+  "cat": "护理与告知",
+  "cn": "如果发烧超过三十八度，请马上来医院",
+  "en": "If your fever goes above 38, come in right away."
+ },
+ {
+  "pack": "restaurant",
+  "cat": "迎宾点单",
+  "cn": "欢迎光临，几位",
+  "en": "Hi, welcome in — how many in your party?"
+ },
+ {
+  "pack": "restaurant",
+  "cat": "迎宾点单",
+  "cn": "靠窗的位子可以吗",
+  "en": "Would you like a table by the window?"
+ },
+ {
+  "pack": "restaurant",
+  "cat": "迎宾点单",
+  "cn": "稍等两分钟，我马上收拾好",
+  "en": "Give me just a minute to clear this table."
+ },
+ {
+  "pack": "restaurant",
+  "cat": "迎宾点单",
+  "cn": "这是菜单，需要看酒水单吗",
+  "en": "Here are your menus. Would you like the drinks list as well?"
+ },
+ {
+  "pack": "restaurant",
+  "cat": "迎宾点单",
+  "cn": "今天的特色是烤鱼",
+  "en": "Our special today is the grilled fish."
+ },
+ {
+  "pack": "restaurant",
+  "cat": "迎宾点单",
+  "cn": "需要我推荐几道吗",
+  "en": "Can I recommend a few dishes?"
+ },
+ {
+  "pack": "restaurant",
+  "cat": "迎宾点单",
+  "cn": "这道菜偏辣，可以接受吗",
+  "en": "This one's on the spicy side — is that okay?"
+ },
+ {
+  "pack": "restaurant",
+  "cat": "迎宾点单",
+  "cn": "您有忌口吗",
+  "en": "Do you have any dietary restrictions?"
+ },
+ {
+  "pack": "restaurant",
+  "cat": "迎宾点单",
+  "cn": "前菜和主菜一起上还是分开",
+  "en": "Would you like your starter and main together or separately?"
+ },
+ {
+  "pack": "restaurant",
+  "cat": "迎宾点单",
+  "cn": "需要加一份米饭吗",
+  "en": "Would you like a side of rice with that?"
+ },
+ {
+  "pack": "restaurant",
+  "cat": "迎宾点单",
+  "cn": "我重复一下您的点单",
+  "en": "Let me read that back to you."
+ },
+ {
+  "pack": "restaurant",
+  "cat": "迎宾点单",
+  "cn": "大约十五分钟就好",
+  "en": "It'll be about fifteen minutes."
+ },
+ {
+  "pack": "restaurant",
+  "cat": "席间与结账",
+  "cn": "这是您的菜，小心烫",
+  "en": "Here's your dish — it's hot."
+ },
+ {
+  "pack": "restaurant",
+  "cat": "席间与结账",
+  "cn": "还需要什么吗",
+  "en": "Is there anything else I can get you?"
+ },
+ {
+  "pack": "restaurant",
+  "cat": "席间与结账",
+  "cn": "帮您把盘子收一下可以吗",
+  "en": "May I take these plates?"
+ },
+ {
+  "pack": "restaurant",
+  "cat": "席间与结账",
+  "cn": "抱歉让您久等了",
+  "en": "Sorry for the wait."
+ },
+ {
+  "pack": "restaurant",
+  "cat": "席间与结账",
+  "cn": "我帮您催一下厨房",
+  "en": "I'll check on that for you."
+ },
+ {
+  "pack": "restaurant",
+  "cat": "席间与结账",
+  "cn": "这道菜我给您重做一份",
+  "en": "I'll have this remade for you."
+ },
+ {
+  "pack": "restaurant",
+  "cat": "席间与结账",
+  "cn": "今天的甜点要试试吗",
+  "en": "Would you like to see the dessert menu?"
+ },
+ {
+  "pack": "restaurant",
+  "cat": "席间与结账",
+  "cn": "可以买单了吗",
+  "en": "Are you ready for the check?"
+ },
+ {
+  "pack": "restaurant",
+  "cat": "席间与结账",
+  "cn": "一起结还是分开",
+  "en": "Together or separate?"
+ },
+ {
+  "pack": "restaurant",
+  "cat": "席间与结账",
+  "cn": "我们收现金和刷卡",
+  "en": "We take cash and card."
+ },
+ {
+  "pack": "restaurant",
+  "cat": "席间与结账",
+  "cn": "服务费已经包含在内了",
+  "en": "The service charge is already included."
+ },
+ {
+  "pack": "restaurant",
+  "cat": "席间与结账",
+  "cn": "谢谢光临，欢迎下次再来",
+  "en": "Thanks for coming — hope to see you again."
+ },
+ {
+  "pack": "hotel",
+  "cat": "入住与退房",
+  "cn": "您好，有预订吗",
+  "en": "Hi there — do you have a reservation with us?"
+ },
+ {
+  "pack": "hotel",
+  "cat": "入住与退房",
+  "cn": "请问预订在谁的名下",
+  "en": "What name is the booking under?"
+ },
+ {
+  "pack": "hotel",
+  "cat": "入住与退房",
+  "cn": "请出示一下护照",
+  "en": "May I see your passport, please?"
+ },
+ {
+  "pack": "hotel",
+  "cat": "入住与退房",
+  "cn": "我帮您安排一间高层的房间",
+  "en": "I'll put you in a room on a higher floor."
+ },
+ {
+  "pack": "hotel",
+  "cat": "入住与退房",
+  "cn": "房费含早餐，七点到十点",
+  "en": "Breakfast is included, from seven to ten."
+ },
+ {
+  "pack": "hotel",
+  "cat": "入住与退房",
+  "cn": "押金两百，退房时退回",
+  "en": "There's a two-hundred deposit, refunded at checkout."
+ },
+ {
+  "pack": "hotel",
+  "cat": "入住与退房",
+  "cn": "这是房卡，电梯在右手边",
+  "en": "Here's your key card — the lifts are on your right."
+ },
+ {
+  "pack": "hotel",
+  "cat": "入住与退房",
+  "cn": "无线网密码在房卡套上",
+  "en": "The Wi-Fi password is on the card sleeve."
+ },
+ {
+  "pack": "hotel",
+  "cat": "入住与退房",
+  "cn": "您要几点退房",
+  "en": "What time will you be checking out?"
+ },
+ {
+  "pack": "hotel",
+  "cat": "入住与退房",
+  "cn": "可以延迟到下午两点退房",
+  "en": "Late checkout until two is fine."
+ },
+ {
+  "pack": "hotel",
+  "cat": "入住与退房",
+  "cn": "这是您的账单，请核对一下",
+  "en": "Here's your bill — please have a look."
+ },
+ {
+  "pack": "hotel",
+  "cat": "入住与退房",
+  "cn": "需要帮您叫车去机场吗",
+  "en": "Would you like me to call a taxi to the airport?"
+ },
+ {
+  "pack": "hotel",
+  "cat": "客需与处理",
+  "cn": "前台，有什么可以帮您",
+  "en": "Front desk — how can I help?"
+ },
+ {
+  "pack": "hotel",
+  "cat": "客需与处理",
+  "cn": "我马上让同事送上去",
+  "en": "I'll have someone bring it up right away."
+ },
+ {
+  "pack": "hotel",
+  "cat": "客需与处理",
+  "cn": "毛巾十分钟内送到",
+  "en": "Towels will be up in ten minutes."
+ },
+ {
+  "pack": "hotel",
+  "cat": "客需与处理",
+  "cn": "现在方便打扫房间吗",
+  "en": "Is it a good time to clean your room?"
+ },
+ {
+  "pack": "hotel",
+  "cat": "客需与处理",
+  "cn": "空调不制冷，我们可以帮您换房",
+  "en": "If the AC isn't cooling, we can move you to another room."
+ },
+ {
+  "pack": "hotel",
+  "cat": "客需与处理",
+  "cn": "行李可以先寄存在这里",
+  "en": "You're welcome to leave your luggage here."
+ },
+ {
+  "pack": "hotel",
+  "cat": "客需与处理",
+  "cn": "洗衣服务明天早上送回",
+  "en": "Laundry will be back tomorrow morning."
+ },
+ {
+  "pack": "hotel",
+  "cat": "客需与处理",
+  "cn": "抱歉给您带来不便",
+  "en": "I'm sorry for the inconvenience."
+ },
+ {
+  "pack": "hotel",
+  "cat": "客需与处理",
+  "cn": "我已经帮您记下了，会尽快处理",
+  "en": "I've made a note of it and we'll take care of it."
+ },
+ {
+  "pack": "hotel",
+  "cat": "客需与处理",
+  "cn": "附近有家不错的餐厅，走路五分钟",
+  "en": "There's a good restaurant five minutes away on foot."
+ },
+ {
+  "pack": "hotel",
+  "cat": "客需与处理",
+  "cn": "需要多一床被子吗",
+  "en": "Would you like an extra blanket?"
+ },
+ {
+  "pack": "hotel",
+  "cat": "客需与处理",
+  "cn": "有维修问题随时拨零",
+  "en": "For any maintenance issues, just dial 0."
+ },
+ {
+  "pack": "trade",
+  "cat": "开发与询盘",
+  "cn": "感谢您的询盘",
+  "en": "Thank you for your inquiry."
+ },
+ {
+  "pack": "trade",
+  "cat": "开发与询盘",
+  "cn": "我们是这家产品的直接生产商",
+  "en": "We're the direct manufacturer of this product."
+ },
+ {
+  "pack": "trade",
+  "cat": "开发与询盘",
+  "cn": "附件是我们的产品目录",
+  "en": "Please find our catalogue attached."
+ },
+ {
+  "pack": "trade",
+  "cat": "开发与询盘",
+  "cn": "这个型号有现货",
+  "en": "This model is in stock."
+ },
+ {
+  "pack": "trade",
+  "cat": "开发与询盘",
+  "cn": "起订量是五百件",
+  "en": "Our minimum order quantity is 500 pieces."
+ },
+ {
+  "pack": "trade",
+  "cat": "开发与询盘",
+  "cn": "样品三天内可以寄出",
+  "en": "We can send samples out within three days."
+ },
+ {
+  "pack": "trade",
+  "cat": "开发与询盘",
+  "cn": "运费按实际重量计算",
+  "en": "Freight is calculated by actual weight."
+ },
+ {
+  "pack": "trade",
+  "cat": "开发与询盘",
+  "cn": "您对包装有什么要求",
+  "en": "Do you have any requirements for the packaging?"
+ },
+ {
+  "pack": "trade",
+  "cat": "开发与询盘",
+  "cn": "我们可以按您的品牌做定制",
+  "en": "We can customize it with your branding."
+ },
+ {
+  "pack": "trade",
+  "cat": "开发与询盘",
+  "cn": "交期大约三十天",
+  "en": "Lead time is around thirty days."
+ },
+ {
+  "pack": "trade",
+  "cat": "开发与询盘",
+  "cn": "能告诉我您的目标价吗",
+  "en": "Could you share your target price?"
+ },
+ {
+  "pack": "trade",
+  "cat": "开发与询盘",
+  "cn": "这个价格含运费吗",
+  "en": "Does this price include shipping?"
+ },
+ {
+  "pack": "trade",
+  "cat": "报价与订单",
+  "cn": "这是我们的最新报价",
+  "en": "Here's our latest quotation."
+ },
+ {
+  "pack": "trade",
+  "cat": "报价与订单",
+  "cn": "报价有效期三十天",
+  "en": "This quote is valid for thirty days."
+ },
+ {
+  "pack": "trade",
+  "cat": "报价与订单",
+  "cn": "量大我们可以再谈折扣",
+  "en": "We can discuss a discount for larger volumes."
+ },
+ {
+  "pack": "trade",
+  "cat": "报价与订单",
+  "cn": "付款方式是百分之三十定金，百分之七十见提单",
+  "en": "Payment is 30% deposit, 70% against the bill of lading."
+ },
+ {
+  "pack": "trade",
+  "cat": "报价与订单",
+  "cn": "我们接受电汇和信用证",
+  "en": "We accept T/T and L/C."
+ },
+ {
+  "pack": "trade",
+  "cat": "报价与订单",
+  "cn": "订单已排产，下周开始生产",
+  "en": "Your order is scheduled for production next week."
+ },
+ {
+  "pack": "trade",
+  "cat": "报价与订单",
+  "cn": "货好了我发照片给您",
+  "en": "I'll send you photos once the goods are ready."
+ },
+ {
+  "pack": "trade",
+  "cat": "报价与订单",
+  "cn": "这批货下周装柜",
+  "en": "The container loads next week."
+ },
+ {
+  "pack": "trade",
+  "cat": "报价与订单",
+  "cn": "装箱单和发票已经发到您邮箱",
+  "en": "The packing list and invoice are in your inbox."
+ },
+ {
+  "pack": "trade",
+  "cat": "报价与订单",
+  "cn": "提单原件已经寄出",
+  "en": "The original bill of lading has been couriered."
+ },
+ {
+  "pack": "trade",
+  "cat": "报价与订单",
+  "cn": "收到货后请确认一下",
+  "en": "Please confirm once the goods arrive."
+ },
+ {
+  "pack": "trade",
+  "cat": "报价与订单",
+  "cn": "有质量问题我们负责到底",
+  "en": "We'll take full responsibility for any quality issues."
+ },
+ {
+  "pack": "support",
+  "cat": "接待与核实",
+  "cn": "您好，请问有什么可以帮您",
+  "en": "Hi, how can I help you today?"
+ },
+ {
+  "pack": "support",
+  "cat": "接待与核实",
+  "cn": "方便提供一下订单号吗",
+  "en": "Could I have your order number, please?"
+ },
+ {
+  "pack": "support",
+  "cat": "接待与核实",
+  "cn": "我帮您查一下，稍等",
+  "en": "Let me pull that up for you."
+ },
+ {
+  "pack": "support",
+  "cat": "接待与核实",
+  "cn": "请问下单时用的手机号是",
+  "en": "What phone number did you use when you ordered?"
+ },
+ {
+  "pack": "support",
+  "cat": "接待与核实",
+  "cn": "我核实一下您的信息",
+  "en": "I just need to verify a few details."
+ },
+ {
+  "pack": "support",
+  "cat": "接待与核实",
+  "cn": "您的订单显示已发货",
+  "en": "Your order shows as shipped."
+ },
+ {
+  "pack": "support",
+  "cat": "接待与核实",
+  "cn": "预计后天送到",
+  "en": "It should arrive the day after tomorrow."
+ },
+ {
+  "pack": "support",
+  "cat": "接待与核实",
+  "cn": "这个情况我记录一下",
+  "en": "I'll log this for you."
+ },
+ {
+  "pack": "support",
+  "cat": "接待与核实",
+  "cn": "我帮您转接专门同事",
+  "en": "I'll transfer you to a colleague who can help."
+ },
+ {
+  "pack": "support",
+  "cat": "接待与核实",
+  "cn": "请稍等，我确认后马上回复您",
+  "en": "Give me a moment and I'll confirm."
+ },
+ {
+  "pack": "support",
+  "cat": "接待与核实",
+  "cn": "您希望退款还是换货",
+  "en": "Would you prefer a refund or a replacement?"
+ },
+ {
+  "pack": "support",
+  "cat": "接待与核实",
+  "cn": "我理解您的心情",
+  "en": "I understand how frustrating this is."
+ },
+ {
+  "pack": "support",
+  "cat": "处理与收尾",
+  "cn": "非常抱歉给您带来不便",
+  "en": "I'm really sorry about the trouble."
+ },
+ {
+  "pack": "support",
+  "cat": "处理与收尾",
+  "cn": "这个我们可以给您全额退款",
+  "en": "We can issue a full refund for this."
+ },
+ {
+  "pack": "support",
+  "cat": "处理与收尾",
+  "cn": "退款三到五个工作日到账",
+  "en": "The refund takes three to five business days."
+ },
+ {
+  "pack": "support",
+  "cat": "处理与收尾",
+  "cn": "补发今天就能安排",
+  "en": "We can send a replacement today."
+ },
+ {
+  "pack": "support",
+  "cat": "处理与收尾",
+  "cn": "麻烦您拍张照片发给我们",
+  "en": "Could you send us a photo?"
+ },
+ {
+  "pack": "support",
+  "cat": "处理与收尾",
+  "cn": "这个问题已经反馈给相关部门",
+  "en": "I've passed this on to the relevant team."
+ },
+ {
+  "pack": "support",
+  "cat": "处理与收尾",
+  "cn": "我会跟进到解决为止",
+  "en": "I'll follow up until it's sorted."
+ },
+ {
+  "pack": "support",
+  "cat": "处理与收尾",
+  "cn": "这不在保修范围内",
+  "en": "This isn't covered by the warranty."
+ },
+ {
+  "pack": "support",
+  "cat": "处理与收尾",
+  "cn": "可以给您补一张优惠券",
+  "en": "We can offer you a voucher instead."
+ },
+ {
+  "pack": "support",
+  "cat": "处理与收尾",
+  "cn": "您看这样处理可以吗",
+  "en": "Does that work for you?"
+ },
+ {
+  "pack": "support",
+  "cat": "处理与收尾",
+  "cn": "还有什么可以帮您的吗",
+  "en": "Is there anything else I can help with?"
+ },
+ {
+  "pack": "support",
+  "cat": "处理与收尾",
+  "cn": "感谢您的耐心等待",
+  "en": "Thanks for your patience."
+ }
+]
