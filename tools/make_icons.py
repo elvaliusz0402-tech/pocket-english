@@ -1,42 +1,27 @@
 #!/usr/bin/env python3
-"""生成 PWA 图标（含 iOS apple-touch-icon）。"""
+"""生成 PWA 图标（含 iOS apple-touch-icon）。easy talk：棕色小熊头。"""
 import os
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(BASE, "icons")
 
-BG_TOP = (75, 122, 140)    # 北欧峡湾蓝
-BG_BOTTOM = (143, 183, 166)  # 北欧苔绿
+BG_TOP = (244, 233, 216)     # 奶油米色
+BG_BOTTOM = (232, 214, 189)  # 浅驼色
+FUR = (139, 96, 66)          # 棕色毛
+FUR_DARK = (117, 79, 53)     # 深棕描边
+EAR_IN = (196, 154, 122)     # 耳内浅棕
+MUZZLE = (240, 222, 199)     # 口鼻浅色
+NOSE = (62, 46, 38)          # 鼻子深棕
+INK = (62, 46, 38)           # 眼睛
 
 
 def lerp(a, b, t):
     return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
 
 
-def font_for(size):
-    candidates = [
-        "/System/Library/Fonts/SFNSRounded.ttf",
-        "/System/Library/Fonts/Helvetica.ttc",
-        "/Library/Fonts/Arial Bold.ttf",
-        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-    ]
-    for p in candidates:
-        if os.path.exists(p):
-            try:
-                return ImageFont.truetype(p, size)
-            except Exception:
-                pass
-    return ImageFont.load_default()
-
-
-INK = (42, 63, 73)          # 深墨色（气泡里的"记录行"）
-BUBBLE = (255, 255, 255, 246)
-
-
-def build(size, rounded=True, bubble_scale=1.0):
-    """talklog 图标：渐变底 + 对话气泡 + 气泡内三条记录行（talk + log）。"""
+def build(size, rounded=True, scale=1.0):
+    """easy talk 图标：米色渐变底 + 棕色小熊头（圆耳 + 浅口鼻 + 微笑）。"""
     s = size
     img = Image.new("RGBA", (s, s), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
@@ -56,44 +41,65 @@ def build(size, rounded=True, bubble_scale=1.0):
         img.paste(grad, (0, 0))
 
     d = ImageDraw.Draw(img)
-    cx, cy = s / 2, s / 2
+    cx, cy = s / 2, s / 2 + s * 0.035 * scale
+    R = s * 0.31 * scale            # 头半径
+    lw = max(2, int(s * 0.016 * scale))
 
-    # 对话气泡（含左下角尾巴）
-    bw = s * 0.60 * bubble_scale
-    bh = s * 0.44 * bubble_scale
-    bx0, by0 = cx - bw / 2, cy - bh / 2 - s * 0.02 * bubble_scale
-    bx1, by1 = cx + bw / 2, cy + bh / 2 - s * 0.02 * bubble_scale
-    tail = s * 0.085 * bubble_scale
-    d.rounded_rectangle([bx0, by0, bx1, by1], radius=int(bh * 0.28), fill=BUBBLE)
-    d.polygon(
-        [(bx0 + bw * 0.22, by1 - 1), (bx0 + bw * 0.22, by1 + tail), (bx0 + bw * 0.06, by1 - 1)],
-        fill=BUBBLE,
-    )
+    def circle(x, y, r, fill, outline=None, width=0):
+        d.ellipse([x - r, y - r, x + r, y + r], fill=fill,
+                  outline=outline, width=width)
 
-    # 气泡内的三条记录行：长 → 短，读起来像"一条条记下来的话"
-    inner_pad = bw * 0.17
-    lx0, lx1 = bx0 + inner_pad, bx1 - inner_pad
-    usable = lx1 - lx0
-    lh = max(2, int(bh * 0.115))
-    gap = bh * 0.235
-    y_top = (by0 + by1) / 2 - gap
-    widths = [1.0, 0.78, 0.5]
-    for i, w in enumerate(widths):
-        yy = y_top + i * gap
-        d.rounded_rectangle(
-            [lx0, yy, lx0 + usable * w, yy + lh], radius=int(lh / 2), fill=INK + (255,)
-        )
+    # 耳朵（先画，被头压住下半部分）
+    ear_r = R * 0.42
+    ear_dx = R * 0.78
+    ear_dy = -R * 0.82
+    for sx in (-1, 1):
+        ex, ey = cx + sx * ear_dx, cy + ear_dy
+        circle(ex, ey, ear_r, FUR, FUR_DARK, lw)
+        circle(ex, ey, ear_r * 0.52, EAR_IN)
+
+    # 头
+    circle(cx, cy, R, FUR, FUR_DARK, lw)
+
+    # 口鼻区
+    mz_r = R * 0.52
+    mz_cy = cy + R * 0.30
+    circle(cx, mz_cy, mz_r, MUZZLE)
+
+    # 鼻子（圆角三角近似：椭圆 + 小竖线到嘴）
+    nose_w, nose_h = R * 0.30, R * 0.20
+    ny = mz_cy - mz_r * 0.30
+    d.ellipse([cx - nose_w / 2, ny - nose_h / 2, cx + nose_w / 2, ny + nose_h / 2],
+              fill=NOSE)
+    # 鼻下竖线 + 微笑（两段弧）
+    ph = mz_r * 0.42
+    d.line([(cx, ny + nose_h / 2), (cx, ny + nose_h / 2 + ph * 0.6)],
+           fill=NOSE, width=max(2, int(R * 0.055)))
+    mw = R * 0.22
+    my = ny + nose_h / 2 + ph * 0.6
+    d.arc([cx - mw, my - mw * 0.8, cx, my + mw * 0.8], 20, 160,
+          fill=NOSE, width=max(2, int(R * 0.05)))
+    d.arc([cx, my - mw * 0.8, cx + mw, my + mw * 0.8], 20, 160,
+          fill=NOSE, width=max(2, int(R * 0.05)))
+
+    # 眼睛
+    eye_r = R * 0.085
+    eye_dy = -R * 0.10
+    eye_dx = R * 0.44
+    for sx in (-1, 1):
+        circle(cx + sx * eye_dx, cy + eye_dy, eye_r, INK)
+
     return img
 
 
 def main():
     os.makedirs(OUT, exist_ok=True)
     targets = {
-        "icon-192.png": (192, dict(rounded=True, bubble_scale=1.0)),
-        "icon-512.png": (512, dict(rounded=True, bubble_scale=1.0)),
+        "icon-192.png": (192, dict(rounded=True, scale=1.0)),
+        "icon-512.png": (512, dict(rounded=True, scale=1.0)),
         # maskable / iOS 由系统自己裁圆角，必须给满幅方图，内容缩到安全区内
-        "icon-maskable-512.png": (512, dict(rounded=False, bubble_scale=0.62)),
-        "apple-touch-icon.png": (180, dict(rounded=False, bubble_scale=1.0)),
+        "icon-maskable-512.png": (512, dict(rounded=False, scale=0.66)),
+        "apple-touch-icon.png": (180, dict(rounded=False, scale=0.92)),
     }
     for name, (size, kw) in targets.items():
         img = build(size, **kw)

@@ -1,4 +1,4 @@
-/* talklog · 主应用 */
+/* easy talk · 主应用 */
 import { Store, SCENES, sceneName, sceneIcon, uid, newSRS } from './store.js';
 import {
   generateVariants, enrichSentences, cleanText, splitSentences,
@@ -1144,7 +1144,7 @@ async function openSettings() {
   const s = sheet('设置', node);
   const verNode = node.querySelector('#s-ver');
   appVersion().then((v) => {
-    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v19</b><br>
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v20</b><br>
     若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
   });
   const presetSel = node.querySelector('[data-preset]');
@@ -1238,7 +1238,7 @@ async function openSettings() {
     const blob = new Blob([data], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `talklog-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `easytalk-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     toast('已导出');
   };
