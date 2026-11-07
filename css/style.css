@@ -400,3 +400,12 @@ hr.sep { border: none; border-top: 1px solid var(--line); margin: 16px 0; }
 .chip.pack { font-weight: 600; letter-spacing: .1px; }
 .btn .svgi { width: 1.02em; height: 1.02em; vertical-align: -.16em; }
 .tip .svgi { color: var(--amber); width: .95em; height: .95em; }
+
+/* 多选语言包：包名小标题 */
+.pb-packname {
+  display: flex; align-items: center; gap: 6px;
+  margin: 14px 2px 8px; padding-left: 2px;
+  font-weight: 700; font-size: 13px; letter-spacing: .3px;
+  color: var(--ink-2, #55606a);
+}
+.pb-packname .svgi { width: 16px; height: 16px; color: var(--fjord); }

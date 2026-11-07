@@ -48,5 +48,6 @@ export const SCENE_ICONS = {
 /* 职业包 id → 图标名 */
 export const PACK_ICONS = {
   daily: 'book', medical: 'health', restaurant: 'bowl',
-  hotel: 'bell', trade: 'globe', support: 'headset'
+  hotel: 'bell', trade: 'globe', support: 'headset',
+  logistics: 'map', education: 'pen', it: 'layers'
 };

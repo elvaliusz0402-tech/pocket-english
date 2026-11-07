@@ -1318,5 +1318,437 @@
   "cat": "处理与收尾",
   "cn": "感谢您的耐心等待",
   "en": "Thanks for your patience."
+ },
+ {
+  "pack": "logistics",
+  "cat": "揽收与下单",
+  "cn": "您好，我想寄一个包裹到美国",
+  "en": "Hi, I'd like to ship a parcel to the US."
+ },
+ {
+  "pack": "logistics",
+  "cat": "揽收与下单",
+  "cn": "这个包裹大概多重",
+  "en": "How much does the parcel weigh, roughly?"
+ },
+ {
+  "pack": "logistics",
+  "cat": "揽收与下单",
+  "cn": "走空运还是海运",
+  "en": "Would you like air or sea freight?"
+ },
+ {
+  "pack": "logistics",
+  "cat": "揽收与下单",
+  "cn": "大约多久能到",
+  "en": "How long will delivery take?"
+ },
+ {
+  "pack": "logistics",
+  "cat": "揽收与下单",
+  "cn": "空运五到七天，海运要三十天左右",
+  "en": "Air freight usually takes five to seven days; sea freight takes about thirty days."
+ },
+ {
+  "pack": "logistics",
+  "cat": "揽收与下单",
+  "cn": "麻烦填一下这张申报单",
+  "en": "Please fill out this customs declaration form."
+ },
+ {
+  "pack": "logistics",
+  "cat": "揽收与下单",
+  "cn": "里面是什么物品",
+  "en": "What's inside the package?"
+ },
+ {
+  "pack": "logistics",
+  "cat": "揽收与下单",
+  "cn": "申报价值是多少",
+  "en": "What's the declared value?"
+ },
+ {
+  "pack": "logistics",
+  "cat": "揽收与下单",
+  "cn": "运费到付还是预付",
+  "en": "Is the freight prepaid or collect?"
+ },
+ {
+  "pack": "logistics",
+  "cat": "揽收与下单",
+  "cn": "您的包裹已经揽收了",
+  "en": "Your parcel has been picked up."
+ },
+ {
+  "pack": "logistics",
+  "cat": "揽收与下单",
+  "cn": "这是您的运单号",
+  "en": "Here's your tracking number."
+ },
+ {
+  "pack": "logistics",
+  "cat": "揽收与下单",
+  "cn": "可以在网站上查物流状态",
+  "en": "You can track the shipment on our website."
+ },
+ {
+  "pack": "logistics",
+  "cat": "运输与异常",
+  "cn": "您的包裹清关时被扣了",
+  "en": "Your parcel is being held at customs."
+ },
+ {
+  "pack": "logistics",
+  "cat": "运输与异常",
+  "cn": "需要补一份商业发票",
+  "en": "We need an extra commercial invoice."
+ },
+ {
+  "pack": "logistics",
+  "cat": "运输与异常",
+  "cn": "收件人地址写错了",
+  "en": "The recipient's address is incorrect."
+ },
+ {
+  "pack": "logistics",
+  "cat": "运输与异常",
+  "cn": "请提供正确地址，我们安排改派",
+  "en": "Please give us the correct address so we can redirect it."
+ },
+ {
+  "pack": "logistics",
+  "cat": "运输与异常",
+  "cn": "包裹在运输途中有破损",
+  "en": "The parcel was damaged in transit."
+ },
+ {
+  "pack": "logistics",
+  "cat": "运输与异常",
+  "cn": "我们会帮您向快递公司索赔",
+  "en": "We'll help you file a claim with the carrier."
+ },
+ {
+  "pack": "logistics",
+  "cat": "运输与异常",
+  "cn": "这票货已经发出去了",
+  "en": "This shipment has already left the warehouse."
+ },
+ {
+  "pack": "logistics",
+  "cat": "运输与异常",
+  "cn": "预计明天到达派送站",
+  "en": "It's expected to arrive at the delivery station tomorrow."
+ },
+ {
+  "pack": "logistics",
+  "cat": "运输与异常",
+  "cn": "海关要求提供收件人的税号",
+  "en": "Customs requires the recipient's tax ID."
+ },
+ {
+  "pack": "logistics",
+  "cat": "运输与异常",
+  "cn": "这批货走散货拼箱",
+  "en": "This cargo will go as LCL."
+ },
+ {
+  "pack": "logistics",
+  "cat": "运输与异常",
+  "cn": "目的港的滞港费由谁承担",
+  "en": "Who covers the demurrage charges at the destination port?"
+ },
+ {
+  "pack": "logistics",
+  "cat": "运输与异常",
+  "cn": "请把提单副本发给我",
+  "en": "Please send me a copy of the bill of lading."
+ },
+ {
+  "pack": "education",
+  "cat": "课堂用语",
+  "cn": "上课了，请大家坐好",
+  "en": "Class begins. Please take your seats."
+ },
+ {
+  "pack": "education",
+  "cat": "课堂用语",
+  "cn": "把书翻到第十二页",
+  "en": "Open your books to page twelve."
+ },
+ {
+  "pack": "education",
+  "cat": "课堂用语",
+  "cn": "谁想回答这个问题",
+  "en": "Who would like to answer this question?"
+ },
+ {
+  "pack": "education",
+  "cat": "课堂用语",
+  "cn": "再说一遍好吗",
+  "en": "Could you say that again, please?"
+ },
+ {
+  "pack": "education",
+  "cat": "课堂用语",
+  "cn": "大家跟我读",
+  "en": "Read after me, everyone."
+ },
+ {
+  "pack": "education",
+  "cat": "课堂用语",
+  "cn": "分组讨论三分钟",
+  "en": "Break into groups and discuss for three minutes."
+ },
+ {
+  "pack": "education",
+  "cat": "课堂用语",
+  "cn": "有问题吗",
+  "en": "Any questions so far?"
+ },
+ {
+  "pack": "education",
+  "cat": "课堂用语",
+  "cn": "请安静，听我说",
+  "en": "Quiet down, please. Listen to me."
+ },
+ {
+  "pack": "education",
+  "cat": "课堂用语",
+  "cn": "这道题的答案是什么",
+  "en": "What's the answer to this one?"
+ },
+ {
+  "pack": "education",
+  "cat": "课堂用语",
+  "cn": "铃响了，今天到这里",
+  "en": "That's the bell. That's all for today."
+ },
+ {
+  "pack": "education",
+  "cat": "课堂用语",
+  "cn": "作业写在练习册第五页",
+  "en": "Do the exercises on page five of your workbook."
+ },
+ {
+  "pack": "education",
+  "cat": "课堂用语",
+  "cn": "下节课听写这些单词",
+  "en": "We'll have a spelling quiz on these words next class."
+ },
+ {
+  "pack": "education",
+  "cat": "家校沟通",
+  "cn": "孩子今天在学校表现很好",
+  "en": "Your child did really well at school today."
+ },
+ {
+  "pack": "education",
+  "cat": "家校沟通",
+  "cn": "他上课有点走神",
+  "en": "He gets a bit distracted in class."
+ },
+ {
+  "pack": "education",
+  "cat": "家校沟通",
+  "cn": "作业经常没交",
+  "en": "He often doesn't hand in his homework."
+ },
+ {
+  "pack": "education",
+  "cat": "家校沟通",
+  "cn": "我们一起帮他赶上进度",
+  "en": "Let's work together to help him catch up."
+ },
+ {
+  "pack": "education",
+  "cat": "家校沟通",
+  "cn": "最近的进步很明显",
+  "en": "The recent progress is really noticeable."
+ },
+ {
+  "pack": "education",
+  "cat": "家校沟通",
+  "cn": "家长会定在周四晚上",
+  "en": "The parent-teacher meeting is on Thursday evening."
+ },
+ {
+  "pack": "education",
+  "cat": "家校沟通",
+  "cn": "请在这个通知上签字",
+  "en": "Please sign this notice."
+ },
+ {
+  "pack": "education",
+  "cat": "家校沟通",
+  "cn": "孩子在学校不舒服，麻烦接一下",
+  "en": "Your child isn't feeling well. Could you pick them up?"
+ },
+ {
+  "pack": "education",
+  "cat": "家校沟通",
+  "cn": "需要请几天假吗",
+  "en": "Will she need a few days off?"
+ },
+ {
+  "pack": "education",
+  "cat": "家校沟通",
+  "cn": "明天学校组织春游",
+  "en": "There's a school field trip tomorrow."
+ },
+ {
+  "pack": "education",
+  "cat": "家校沟通",
+  "cn": "请给孩子带好水壶",
+  "en": "Please make sure your child brings a water bottle."
+ },
+ {
+  "pack": "education",
+  "cat": "家校沟通",
+  "cn": "有任何情况随时联系我",
+  "en": "Feel free to contact me anytime if anything comes up."
+ },
+ {
+  "pack": "it",
+  "cat": "需求与演示",
+  "cn": "我先简单介绍一下我们的产品",
+  "en": "Let me start with a quick intro to our product."
+ },
+ {
+  "pack": "it",
+  "cat": "需求与演示",
+  "cn": "你们目前用的是什么系统",
+  "en": "What system are you currently using?"
+ },
+ {
+  "pack": "it",
+  "cat": "需求与演示",
+  "cn": "主要的痛点是什么",
+  "en": "What are the biggest pain points?"
+ },
+ {
+  "pack": "it",
+  "cat": "需求与演示",
+  "cn": "我们先看一个演示",
+  "en": "Let's take a look at a quick demo."
+ },
+ {
+  "pack": "it",
+  "cat": "需求与演示",
+  "cn": "这个模块管进销存",
+  "en": "This module handles inventory and sales."
+ },
+ {
+  "pack": "it",
+  "cat": "需求与演示",
+  "cn": "支持多仓库管理吗",
+  "en": "Does it support multi-warehouse management?"
+ },
+ {
+  "pack": "it",
+  "cat": "需求与演示",
+  "cn": "可以和现有系统对接吗",
+  "en": "Can it integrate with our existing systems?"
+ },
+ {
+  "pack": "it",
+  "cat": "需求与演示",
+  "cn": "报价包含哪些服务",
+  "en": "What services are included in the quote?"
+ },
+ {
+  "pack": "it",
+  "cat": "需求与演示",
+  "cn": "按年付有折扣吗",
+  "en": "Is there a discount for annual billing?"
+ },
+ {
+  "pack": "it",
+  "cat": "需求与演示",
+  "cn": "免费试用多久",
+  "en": "How long is the free trial?"
+ },
+ {
+  "pack": "it",
+  "cat": "需求与演示",
+  "cn": "数据安全怎么保障",
+  "en": "How do you ensure data security?"
+ },
+ {
+  "pack": "it",
+  "cat": "需求与演示",
+  "cn": "我把方案发您邮箱",
+  "en": "I'll email you the proposal."
+ },
+ {
+  "pack": "it",
+  "cat": "实施与支持",
+  "cn": "实施周期大概六周",
+  "en": "The implementation takes about six weeks."
+ },
+ {
+  "pack": "it",
+  "cat": "实施与支持",
+  "cn": "我们先做数据迁移",
+  "en": "We'll start with data migration."
+ },
+ {
+  "pack": "it",
+  "cat": "实施与支持",
+  "cn": "请提供一份用户名单",
+  "en": "Please provide a list of user accounts."
+ },
+ {
+  "pack": "it",
+  "cat": "实施与支持",
+  "cn": "培训定在周四下午",
+  "en": "The training session is set for Thursday afternoon."
+ },
+ {
+  "pack": "it",
+  "cat": "实施与支持",
+  "cn": "系统今晚十点升级",
+  "en": "The system will be upgraded at ten tonight."
+ },
+ {
+  "pack": "it",
+  "cat": "实施与支持",
+  "cn": "升级期间会有短暂停机",
+  "en": "There will be a short downtime during the upgrade."
+ },
+ {
+  "pack": "it",
+  "cat": "实施与支持",
+  "cn": "这个问题我们已经收到了",
+  "en": "We've received your issue report."
+ },
+ {
+  "pack": "it",
+  "cat": "实施与支持",
+  "cn": "我们会尽快修复",
+  "en": "We're working on a fix as soon as possible."
+ },
+ {
+  "pack": "it",
+  "cat": "实施与支持",
+  "cn": "新版本下周一发布",
+  "en": "The new release comes out next Monday."
+ },
+ {
+  "pack": "it",
+  "cat": "实施与支持",
+  "cn": "请清除缓存后重试",
+  "en": "Please clear the cache and try again."
+ },
+ {
+  "pack": "it",
+  "cat": "实施与支持",
+  "cn": "您用的是哪个浏览器",
+  "en": "Which browser are you using?"
+ },
+ {
+  "pack": "it",
+  "cat": "实施与支持",
+  "cn": "我远程看一下您的环境",
+  "en": "Let me take a look at your environment remotely."
  }
 ]

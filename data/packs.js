@@ -212,5 +212,128 @@ window.PHRASE_PACKS = [
         ]
       }
     ]
+  },
+
+  /* ---------------- 跨境物流 ---------------- */
+  {
+    id: 'logistics', name: '跨境物流', icon: 'map', desc: '揽收、申报、清关、异常',
+    cats: [
+      {
+        id: 'log-pickup', name: '揽收与下单', scene: 'work',
+        items: [
+          ["您好，我想寄一个包裹到美国", "Hi, I'd like to ship a parcel to the US.", ["寄快递", "国际件"], "ship 作动词 = 寄送，比 send 更专业。"],
+          ["这个包裹大概多重", "How much does the parcel weigh, roughly?", ["重量", "称重"], "roughly 表示\"大概\"，口语高频。"],
+          ["走空运还是海运", "Would you like air or sea freight?", ["空运", "海运"], "freight 是运输/运费的总称。"],
+          ["大约多久能到", "How long will delivery take?", ["时效", "多久"], "问时效的通用句。"],
+          ["空运五到七天，海运要三十天左右", "Air freight usually takes five to seven days; sea freight takes about thirty days.", ["时效", "报价"], "take + 时间 表\"需要多久\"。"],
+          ["麻烦填一下这张申报单", "Please fill out this customs declaration form.", ["申报", "报关"], "customs declaration 报关单，固定术语。"],
+          ["里面是什么物品", "What's inside the package?", ["品名", "查验"], "问品名的日常说法。"],
+          ["申报价值是多少", "What's the declared value?", ["申报价值", "保险"], "declared value 申报价值，理赔按此计算。"],
+          ["运费到付还是预付", "Is the freight prepaid or collect?", ["运费", "付款方式"], "prepaid 预付 / collect 到付，行业固定说法。"],
+          ["您的包裹已经揽收了", "Your parcel has been picked up.", ["揽收", "通知"], "pick up 揽收。"],
+          ["这是您的运单号", "Here's your tracking number.", ["运单号", "跟踪"], "tracking number 运单号/跟踪号。"],
+          ["可以在网站上查物流状态", "You can track the shipment on our website.", ["查询", "物流状态"], "track 作动词 = 追踪物流。"]
+        ]
+      },
+      {
+        id: 'log-issue', name: '运输与异常', scene: 'work',
+        items: [
+          ["您的包裹清关时被扣了", "Your parcel is being held at customs.", ["清关", "扣关"], "be held at customs 被海关扣留。"],
+          ["需要补一份商业发票", "We need an extra commercial invoice.", ["商业发票", "补件"], "commercial invoice 商业发票，清关必备。"],
+          ["收件人地址写错了", "The recipient's address is incorrect.", ["地址错误", "改地址"], "recipient 收件人。"],
+          ["请提供正确地址，我们安排改派", "Please give us the correct address so we can redirect it.", ["改派", "转发"], "redirect 改派/转寄。"],
+          ["包裹在运输途中有破损", "The parcel was damaged in transit.", ["破损", "理赔"], "in transit 运输途中，固定短语。"],
+          ["我们会帮您向快递公司索赔", "We'll help you file a claim with the carrier.", ["索赔", "承运商"], "file a claim 发起理赔。"],
+          ["这票货已经发出去了", "This shipment has already left the warehouse.", ["发货", "出库"], "shipment 一票货。"],
+          ["预计明天到达派送站", "It's expected to arrive at the delivery station tomorrow.", ["到站", "预计"], "be expected to 预计。"],
+          ["海关要求提供收件人的税号", "Customs requires the recipient's tax ID.", ["税号", "清关"], "tax ID 税号，欧洲清关常见要求。"],
+          ["这批货走散货拼箱", "This cargo will go as LCL.", ["拼箱", "散货"], "LCL = less than container load 拼箱。"],
+          ["目的港的滞港费由谁承担", "Who covers the demurrage charges at the destination port?", ["滞港费", "目的港"], "demurrage 滞港费，行业术语。"],
+          ["请把提单副本发给我", "Please send me a copy of the bill of lading.", ["提单", "单证"], "bill of lading (B/L) 提单。"]
+        ]
+      }
+    ]
+  },
+
+  /* ---------------- 学校教育 ---------------- */
+  {
+    id: 'education', name: '学校教育', icon: 'pen', desc: '课堂组织、家校沟通',
+    cats: [
+      {
+        id: 'edu-class', name: '课堂用语', scene: 'work',
+        items: [
+          ["上课了，请大家坐好", "Class begins. Please take your seats.", ["上课", "纪律"], "take one's seat 就座。"],
+          ["把书翻到第十二页", "Open your books to page twelve.", ["翻书", "页码"], "page twelve 不加 the。"],
+          ["谁想回答这个问题", "Who would like to answer this question?", ["提问", "互动"], "would like 比 want 委婉。"],
+          ["再说一遍好吗", "Could you say that again, please?", ["重复", "听力"], "课堂最常用的礼貌重复句。"],
+          ["大家跟我读", "Read after me, everyone.", ["带读", "跟读"], "read after sb 跟读。"],
+          ["分组讨论三分钟", "Break into groups and discuss for three minutes.", ["分组", "讨论"], "break into groups 分组。"],
+          ["有问题吗", "Any questions so far?", ["提问", "确认"], "so far 到目前为止，比 Any questions 更自然。"],
+          ["请安静，听我说", "Quiet down, please. Listen to me.", ["安静", "纪律"], "quiet down 使安静。"],
+          ["这道题的答案是什么", "What's the answer to this one?", ["答案", "讲解"], "answer to the question 固定搭配。"],
+          ["铃响了，今天到这里", "That's the bell. That's all for today.", ["下课", "收尾"], "That's all for today 下课收尾句。"],
+          ["作业写在练习册第五页", "Do the exercises on page five of your workbook.", ["作业", "练习册"], "workbook 练习册。"],
+          ["下节课听写这些单词", "We'll have a spelling quiz on these words next class.", ["听写", "测验"], "spelling quiz 听写小测。"]
+        ]
+      },
+      {
+        id: 'edu-parent', name: '家校沟通', scene: 'work',
+        items: [
+          ["孩子今天在学校表现很好", "Your child did really well at school today.", ["表扬", "反馈"], "先扬后抑的沟通开场。"],
+          ["他上课有点走神", "He gets a bit distracted in class.", ["走神", "提醒"], "get distracted 走神。"],
+          ["作业经常没交", "He often doesn't hand in his homework.", ["作业", "缺交"], "hand in 上交。"],
+          ["我们一起帮他赶上进度", "Let's work together to help him catch up.", ["补进度", "合作"], "catch up 赶上进度。"],
+          ["最近的进步很明显", "The recent progress is really noticeable.", ["进步", "表扬"], "noticeable 明显的。"],
+          ["家长会定在周四晚上", "The parent-teacher meeting is on Thursday evening.", ["家长会", "通知"], "parent-teacher meeting 家长会。"],
+          ["请在这个通知上签字", "Please sign this notice.", ["签字", "通知"], "sign the notice 在通知上签字。"],
+          ["孩子在学校不舒服，麻烦接一下", "Your child isn't feeling well. Could you pick them up?", ["接孩子", "身体不适"], "pick sb up 接人。"],
+          ["需要请几天假吗", "Will she need a few days off?", ["请假", "病假"], "days off 休息日/假期。"],
+          ["明天学校组织春游", "There's a school field trip tomorrow.", ["春游", "活动"], "field trip 校外实践活动。"],
+          ["请给孩子带好水壶", "Please make sure your child brings a water bottle.", ["物品准备", "提醒"], "make sure 确保。"],
+          ["有任何情况随时联系我", "Feel free to contact me anytime if anything comes up.", ["联系", "收尾"], "come up 出现状况。"]
+        ]
+      }
+    ]
+  },
+
+  /* ---------------- IT / ERP / SaaS ---------------- */
+  {
+    id: 'it', name: 'IT / ERP / SaaS', icon: 'layers', desc: '售前演示、实施与支持',
+    cats: [
+      {
+        id: 'it-sales', name: '需求与演示', scene: 'work',
+        items: [
+          ["我先简单介绍一下我们的产品", "Let me start with a quick intro to our product.", ["开场", "介绍"], "quick intro 比 detailed introduction 口语化。"],
+          ["你们目前用的是什么系统", "What system are you currently using?", ["现状", "摸底"], "currently 目前，售前必问。"],
+          ["主要的痛点是什么", "What are the biggest pain points?", ["痛点", "需求"], "pain point 痛点，行业黑话。"],
+          ["我们先看一个演示", "Let's take a look at a quick demo.", ["演示", "Demo"], "demo 是 demonstration 的口语缩写。"],
+          ["这个模块管进销存", "This module handles inventory and sales.", ["模块", "进销存"], "handle 负责，模块介绍高频。"],
+          ["支持多仓库管理吗", "Does it support multi-warehouse management?", ["多仓库", "功能"], "multi-warehouse 多仓库。"],
+          ["可以和现有系统对接吗", "Can it integrate with our existing systems?", ["对接", "集成"], "integrate with 与…集成。"],
+          ["报价包含哪些服务", "What services are included in the quote?", ["报价", "服务范围"], "be included in 包含在。"],
+          ["按年付有折扣吗", "Is there a discount for annual billing?", ["折扣", "订阅"], "annual billing 按年计费。"],
+          ["免费试用多久", "How long is the free trial?", ["试用", "免费"], "free trial 免费试用。"],
+          ["数据安全怎么保障", "How do you ensure data security?", ["数据安全", "合规"], "ensure 确保，比 make sure 正式。"],
+          ["我把方案发您邮箱", "I'll email you the proposal.", ["方案", "跟进"], "proposal 方案，email 作动词。"]
+        ]
+      },
+      {
+        id: 'it-support', name: '实施与支持', scene: 'work',
+        items: [
+          ["实施周期大概六周", "The implementation takes about six weeks.", ["实施周期", "排期"], "implementation 实施。"],
+          ["我们先做数据迁移", "We'll start with data migration.", ["数据迁移", "上线"], "migration 迁移。"],
+          ["请提供一份用户名单", "Please provide a list of user accounts.", ["用户名单", "开通"], "user account 用户账号。"],
+          ["培训定在周四下午", "The training session is set for Thursday afternoon.", ["培训", "排期"], "training session 培训场。"],
+          ["系统今晚十点升级", "The system will be upgraded at ten tonight.", ["升级", "通知"], "be upgraded 被动语态表计划。"],
+          ["升级期间会有短暂停机", "There will be a short downtime during the upgrade.", ["停机", "维护"], "downtime 停机时间。"],
+          ["这个问题我们已经收到了", "We've received your issue report.", ["受理", "工单"], "issue report 问题报告/工单。"],
+          ["我们会尽快修复", "We're working on a fix as soon as possible.", ["修复", "安抚"], "work on a fix 着手修复。"],
+          ["新版本下周一发布", "The new release comes out next Monday.", ["发版", "时间"], "release 作名词 = 新版本。"],
+          ["请清除缓存后重试", "Please clear the cache and try again.", ["缓存", "排查"], "clear the cache 清缓存，技术支持高频。"],
+          ["您用的是哪个浏览器", "Which browser are you using?", ["浏览器", "排查"], "which browser 排查兼容性第一步。"],
+          ["我远程看一下您的环境", "Let me take a look at your environment remotely.", ["远程", "支持"], "remotely 远程地。"]
+        ]
+      }
+    ]
   }
 ];

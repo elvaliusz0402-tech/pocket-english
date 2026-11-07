@@ -25,11 +25,24 @@ const state = {
   capScene: '',
  ocrSents: [],
   ocrCards: [],
-  pbPack: localStorage.getItem('talklog-pack') || 'daily',
+  pbPacks: null,   // 已选语言包（数组，可多选）；boot 时从 localStorage 恢复
   pbCat: 'all',
   pbQ: '',
   pbOpen: {}   // 常用句分组折叠状态 { catId: bool }
 };
+
+/* 语言包多选：旧版单选键 talklog-pack 自动迁移到 easytalk-packs（数组） */
+function loadPackSelection() {
+  try {
+    const v = JSON.parse(localStorage.getItem('easytalk-packs') || 'null');
+    if (Array.isArray(v) && v.length) return v;
+  } catch { /* fallthrough */ }
+  const old = localStorage.getItem('talklog-pack');
+  return old ? [old] : ['daily'];
+}
+function savePackSelection() {
+  try { localStorage.setItem('easytalk-packs', JSON.stringify(state.pbPacks)); } catch { /* ignore */ }
+}
 
 /* ============ 数据 ============ */
 async function load() {
@@ -67,22 +80,25 @@ function setTab(name) {
 const allPacks = () => (window.PHRASE_PACKS
   || [{ id: 'daily', name: '日常用语', cats: window.PHRASEBOOK || [] }]);
 
-function curPack() {
+/* 当前选中的包（数组，保持用户点选顺序；至少保留一个） */
+function selectedPacks() {
   const ps = allPacks();
-  return ps.find((p) => p.id === state.pbPack) || ps[0];
+  const sel = (state.pbPacks || []).filter((id) => ps.some((p) => p.id === id));
+  if (!sel.length) return [ps[0]];
+  return sel.map((id) => ps.find((p) => p.id === id));
 }
 
-/* 每个包各自缓存一份扁平索引 */
+/* 每个包各自缓存一份扁平索引；pbAll 返回所有已选包合并后的条目 */
 const PB_CACHE = {};
-function pbAll() {
-  const pack = curPack();
+function pbAllFor(pack) {
   if (!PB_CACHE[pack.id]) {
     const arr = [];
     (pack.cats || []).forEach((cat) => {
       (cat.items || []).forEach(([cn, en, keys, note]) => {
         arr.push({
           cn, en, keys: keys || [], note: note || '',
-          scene: cat.scene || 'other', cat: cat.name,
+          scene: cat.scene || 'other', cat: cat.name, catId: cat.id, packId: pack.id,
+          packName: pack.name,
           _idx: buildIndex({ cn, en, tags: keys, natural: note || '' })
         });
       });
@@ -90,6 +106,11 @@ function pbAll() {
     PB_CACHE[pack.id] = arr;
   }
   return PB_CACHE[pack.id];
+}
+function pbAll() {
+  const merged = [];
+  selectedPacks().forEach((p) => merged.push(...pbAllFor(p)));
+  return merged;
 }
 
 function pbRow(x, savedEn) {
@@ -122,28 +143,37 @@ function pbRow(x, savedEn) {
 
 function renderPhrases() {
   const packs = allPacks();
-  const pack = curPack();
-  const cats = pack.cats || [];
+  const sel = selectedPacks();          // 已选包（可多个）
+  const multi = sel.length > 1;
 
-  /* —— 语言包选择 —— */
+  /* —— 语言包多选：点选切换，至少保留一个 —— */
   const pb = document.getElementById('pb-packs');
   pb.innerHTML = '';
   packs.forEach((p) => {
-    const c = el(`<button class="chip pack ${state.pbPack === p.id ? 'on' : ''}">${ico(PACK_ICONS[p.icon] || p.icon || 'book')} ${esc(p.name)}</button>`);
+    const on = sel.some((x) => x.id === p.id);
+    const c = el(`<button class="chip pack ${on ? 'on' : ''}" title="点按勾选/取消，可同时选多个">${ico(PACK_ICONS[p.icon] || p.icon || 'book')} ${esc(p.name)}</button>`);
     c.onclick = () => {
-      if (state.pbPack === p.id) return;
-      state.pbPack = p.id;
+      const i = state.pbPacks.indexOf(p.id);
+      if (i >= 0) {
+        if (state.pbPacks.length <= 1) { toast('至少保留一个语言包'); return; }
+        state.pbPacks.splice(i, 1);
+      } else {
+        state.pbPacks.push(p.id);
+      }
+      savePackSelection();
       state.pbCat = 'all';
-      state.pbQ = '';
-      document.getElementById('pb-q').value = '';
-      try { localStorage.setItem('talklog-pack', p.id); } catch { }
+      state.pbOpen = {};
       renderPhrases();
-      window.scrollTo({ top: 0 });
     };
     pb.appendChild(c);
   });
 
-  /* —— 包内分类 —— */
+  /* —— 分类（跨已选包取并集；catId 全局唯一） —— */
+  const cats = [];
+  sel.forEach((p) => (p.cats || []).forEach((cat) => {
+    if (!cats.some((c) => c.id === cat.id)) cats.push(cat);
+  }));
+
   const box = document.getElementById('pb-cats');
   box.innerHTML = '';
   const mk = (id, text) => {
@@ -162,10 +192,11 @@ function renderPhrases() {
 
   /* —— 搜索或选中某一类：平铺结果 —— */
   if (searching || state.pbCat !== 'all') {
-    let list = all.filter((x) => state.pbCat === 'all' || cats.find((c) => c.id === state.pbCat)?.name === x.cat);
+    let list = all.filter((x) => state.pbCat === 'all' || x.catId === state.pbCat);
     if (searching) list = searchEntries(list, state.pbQ).map((r) => r.e);
+    const selNames = sel.map((p) => p.name).join('、');
     document.getElementById('pb-count').textContent = searching
-      ? `匹配到 ${list.length} 句（当前包：${pack.name}）`
+      ? `匹配到 ${list.length} 句（已选：${selNames}）`
       : `${cats.find((c) => c.id === state.pbCat)?.name || ''} · 共 ${list.length} 句 · 点「收藏」即可收进积累库`;
     if (!list.length) {
       wrap.innerHTML = `<div class="empty"><span class="big">${ico('search')}</span>没找到，换个关键词试试<br><span class="muted">支持中文意思、英文单词、场景名</span></div>`;
@@ -175,16 +206,21 @@ function renderPhrases() {
     return;
   }
 
-  /* —— 默认浏览：按类别分组，全部展开，可逐组折叠 —— */
+  /* —— 默认浏览：按包→类别分组，可逐组折叠 —— */
   const openCount = cats.filter((c) => state.pbOpen[c.id] !== false).length;
   document.getElementById('pb-count').innerHTML =
-    `<b>${esc(pack.name)}</b>${pack.desc ? ` · ${esc(pack.desc)}` : ''} · 共 ${all.length} 句 · ${openCount}/${cats.length} 组展开`;
+    `${multi ? `已选 ${sel.length} 个包` : `<b>${esc(sel[0].name)}</b>${sel[0].desc ? ` · ${esc(sel[0].desc)}` : ''}`} · 共 ${all.length} 句 · ${openCount}/${cats.length} 组展开`;
 
-  cats.forEach((cat) => {
-    const items = all.filter((x) => x.cat === cat.name);
-    if (!items.length) return;
-    const open = state.pbOpen[cat.id] !== false;
-    const g = el(`<div class="pb-group ${open ? '' : 'closed'}">
+  sel.forEach((p) => {
+    if (multi) {
+      const h = el(`<div class="pb-packname">${ico(PACK_ICONS[p.icon] || p.icon || 'book')} ${esc(p.name)}</div>`);
+      wrap.appendChild(h);
+    }
+    (p.cats || []).forEach((cat) => {
+      const items = pbAllFor(p).filter((x) => x.catId === cat.id);
+      if (!items.length) return;
+      const open = state.pbOpen[cat.id] !== false;
+      const g = el(`<div class="pb-group ${open ? '' : 'closed'}">
       <header class="pb-head">
         <span class="caret">${ico('chevron')}</span>
         <b>${esc(cat.name)}</b>
@@ -193,13 +229,14 @@ function renderPhrases() {
       </header>
       <div class="pb-body"></div>
     </div>`);
-    const body = g.querySelector('.pb-body');
-    items.forEach((x) => body.appendChild(pbRow(x, savedEn)));
-    g.querySelector('.pb-head').onclick = () => {
-      state.pbOpen[cat.id] = !open;   // 折叠 ↔ 展开
-      renderPhrases();
-    };
-    wrap.appendChild(g);
+      const body = g.querySelector('.pb-body');
+      items.forEach((x) => body.appendChild(pbRow(x, savedEn)));
+      g.querySelector('.pb-head').onclick = () => {
+        state.pbOpen[cat.id] = !open;   // 折叠 ↔ 展开
+        renderPhrases();
+      };
+      wrap.appendChild(g);
+    });
   });
 }
 
@@ -719,13 +756,13 @@ async function renderDailyCard() {
   const btn = document.getElementById('d-start');
   if (!box) return;
   const prog = await dayProgress();
-  const total = phraseItems(state.pbPack).length + state.entries.filter((e) => e.en && e.cn).length;
+  const total = phraseItems(state.pbPacks).length + state.entries.filter((e) => e.en && e.cn).length;
   box.innerHTML = `
     <div class="stat"><b style="color:var(--fjord)">${prog.done}</b><span>今日已过</span></div>
     <div class="stat"><b style="color:#4E7A5C">${prog.right}</b><span>答对</span></div>
     <div class="stat"><b style="color:var(--rose)">${prog.wrong}</b><span>答错</span></div>`;
   const left = Math.max(0, DAILY_SIZE - prog.done);
-  note.innerHTML = `每天 ${DAILY_SIZE} 条：「${esc(curPack().name)}」+ 积累库混合，给中文写出/说出英文。<b>答对即过，答错的题本轮还会再出现</b>（之后的几天也更容易被抽到）。题池共 ${total} 条，今天还剩 ${left} 条。`;
+  note.innerHTML = `每天 ${DAILY_SIZE} 条：「${esc(selectedPacks().map((p) => p.name).join('、'))}」+ 积累库混合，给中文写出/说出英文。<b>答对即过，答错的题本轮还会再出现</b>（之后的几天也更容易被抽到）。题池共 ${total} 条，今天还剩 ${left} 条。`;
   btn.textContent = prog.done ? `继续今日滚动（还剩 ${left} 条）` : '开始今日滚动';
   btn.onclick = startDaily;
 }
@@ -773,7 +810,7 @@ function startPractice(list) {
 let drill = null;
 
 async function startDaily() {
-  const { deck } = await buildDailyDeck(state.entries, { packId: state.pbPack });
+  const { deck } = await buildDailyDeck(state.entries, { packIds: state.pbPacks });
   if (!deck.length) { toast('题池是空的：先去积累几句话，或检查常用100句'); return; }
   drill = { deck, i: 0, right: 0, wrong: 0 };
   renderDrill();
@@ -1144,7 +1181,7 @@ async function openSettings() {
   const s = sheet('设置', node);
   const verNode = node.querySelector('#s-ver');
   appVersion().then((v) => {
-    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v20</b><br>
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v21</b><br>
     若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
   });
   const presetSel = node.querySelector('[data-preset]');
@@ -1378,6 +1415,8 @@ async function importConfigFromHash() {
 }
 
 async function boot() {
+  state.pbPacks = loadPackSelection();
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch { }
   document.querySelectorAll('.tabbar button').forEach((b) => {
     b.onclick = () => setTab(b.dataset.tab);
   });
