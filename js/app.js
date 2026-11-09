@@ -7,6 +7,7 @@ import {
   normalizeBaseUrl, localVariants, engineStatus, listModels, testLLM, testBothLLM
 } from './engine.js';
 import { buildIndex, searchEntries } from './search.js';
+import { Sync } from './sync.js';
 import { recognize, downscale } from './ocr.js';
 import { buildQueue, grade, isDue, stats, dueIn, MASTERED_BOX } from './practice.js';
 import {
@@ -1159,6 +1160,22 @@ async function openSettings() {
     </div>
     <div class="muted" id="cfg-out" style="margin-top:6px;font-size:13px;line-height:1.6"></div>
     <hr class="sep">
+    <div class="section-title" style="margin-top:0">云同步（云端备份积累库）</div>
+    <div class="muted" style="font-size:12px;line-height:1.7;margin-bottom:8px">已接通免费云数据库（Supabase）。积累库<b>自动备份到云端</b>：换手机、清缓存、误删都不怕，多台设备自动互通。每 30 秒和打开页面时自动同步，无需任何操作。</div>
+    <label class="row" style="margin-bottom:6px">
+      <input type="checkbox" data-cloud-on ${Sync.enabled() ? 'checked' : ''} style="width:auto">
+      <span>开启云同步（关闭则只存本机）</span>
+    </label>
+    <div class="btn-row">
+      <button class="btn soft sm" id="cloud-sync">立即同步</button>
+      <button class="btn ghost sm" id="cloud-code">复制同步码</button>
+    </div>
+    <textarea id="cloud-code-in" rows="1" placeholder="换新设备时：在旧设备复制同步码，粘贴到这里导入" style="width:100%;font-size:12px;margin-top:8px"></textarea>
+    <div class="btn-row" style="margin-top:6px">
+      <button class="btn ghost sm" id="cloud-import">导入同步码</button>
+    </div>
+    <div class="muted" id="cloud-out" style="margin-top:8px;font-size:13px;line-height:1.6"></div>
+    <hr class="sep">
     <div class="section-title" style="margin-top:0">数据</div>
     <div class="btn-row">
       <button class="btn ghost sm" id="s-export">导出 JSON</button>
@@ -1166,7 +1183,7 @@ async function openSettings() {
       <button class="btn ghost sm" id="s-seed">塞入示例表达</button>
       <button class="btn ghost sm" id="s-clear" style="color:var(--rose)">清空全部</button>
     </div>
-    <div class="muted" style="margin-top:10px">共 ${st.total} 条。数据只存在这台设备的浏览器里。<b>更新程序不会动这些数据</b>，但换域名、清缓存、换设备会。</div>
+    <div class="muted" style="margin-top:10px">共 ${st.total} 条。云同步开启时自动备份到云端；<b>更新程序不会动这些数据</b>，清缓存、换设备也不怕丢。</div>
     <div class="btn-row" style="margin-top:10px">
       <button class="btn soft sm" id="s-snap">立即备份快照</button>
       <button class="btn ghost sm" id="s-restore">恢复最近快照</button>
@@ -1181,7 +1198,7 @@ async function openSettings() {
   const s = sheet('设置', node);
   const verNode = node.querySelector('#s-ver');
   appVersion().then((v) => {
-    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v21</b><br>
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v22</b><br>
     若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
   });
   const presetSel = node.querySelector('[data-preset]');
@@ -1269,6 +1286,45 @@ async function openSettings() {
     });
     await copy(code);
     toast('本机配置码已复制，发到手机后在这页粘贴导入');
+  };
+  /* ---- 云同步 ---- */
+  const cloudOut = node.querySelector('#cloud-out');
+  cloudOut.textContent = Sync.statusText();
+  const cloudOn = node.querySelector('[data-cloud-on]');
+  cloudOn.onchange = () => {
+    Sync.setEnabled(cloudOn.checked);
+    cloudOut.textContent = Sync.statusText();
+    toast(cloudOn.checked ? '云同步已开启，马上会同步一次' : '云同步已关闭（数据只存本机）');
+    if (cloudOn.checked) Sync.syncNow(true).then(() => { cloudOut.textContent = Sync.statusText(); });
+  };
+  node.querySelector('#cloud-sync').onclick = async () => {
+    cloudOut.textContent = '正在同步…';
+    try {
+      const r = await Sync.syncNow(false);
+      cloudOut.textContent = `同步完成：拉取 ${r.pulled || 0} 条 · 上传 ${r.pushed || 0} 条 · 云端清理 ${r.deleted || 0} 条`;
+    } catch (e) {
+      cloudOut.textContent = '同步失败：' + e.message;
+    }
+  };
+  node.querySelector('#cloud-code').onclick = async () => {
+    await copy(Sync.getSecret());
+    toast('同步码已复制，粘贴到新设备的这页即可互通');
+    cloudOut.textContent = '同步码已复制。它等同数据钥匙，只发给你自己的设备。';
+  };
+  node.querySelector('#cloud-import').onclick = async () => {
+    const code = node.querySelector('#cloud-code-in').value.trim();
+    if (!code) { cloudOut.textContent = '先把旧设备的同步码粘贴进来'; return; }
+    const ok = await confirmSheet('导入同步码？', '导入后本机会接管该同步码对应的云端数据，并自动与云端合并。本机原有数据仍会保留并一起上传。', '导入');
+    if (!ok) return;
+    if (!Sync.importSecret(code)) { cloudOut.textContent = '同步码格式不对（应为 40 位字母数字）'; return; }
+    cloudOut.textContent = '已导入，正在与云端合并…';
+    try {
+      const r = await Sync.syncNow(false);
+      cloudOut.textContent = `合并完成：拉取 ${r.pulled || 0} 条 · 上传 ${r.pushed || 0} 条`;
+      toast('云同步已接管');
+    } catch (e) {
+      cloudOut.textContent = '合并失败：' + e.message;
+    }
   };
   node.querySelector('#s-export').onclick = async () => {
     const data = JSON.stringify(await Store.all(), null, 2);
@@ -1442,6 +1498,13 @@ async function boot() {
   });
 
   await load();
+  Sync.init({
+    onChange: async () => {
+      await load();
+      updateSub();
+      if (state.tab === 'library') renderLibrary();
+    }
+  });
   const imported = await importConfigFromHash();
   updateSub();
   renderBanner();
