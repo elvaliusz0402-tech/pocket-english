@@ -1175,6 +1175,15 @@ async function openSettings() {
     </div>
     <div class="muted" id="cloud-out" style="margin-top:8px;font-size:13px;line-height:1.6"></div>
     <hr class="sep">
+    <div class="section-title" style="margin-top:0">字体大小</div>
+    <div class="btn-row" id="fs-row">
+      <button class="btn ghost sm" data-fs="0.9">小</button>
+      <button class="btn ghost sm" data-fs="1">标准</button>
+      <button class="btn ghost sm" data-fs="1.15">大</button>
+      <button class="btn ghost sm" data-fs="1.3">特大</button>
+    </div>
+    <div class="muted" style="margin-top:6px;font-size:13px">点一下立即生效，存在本设备。页面里双指缩放被禁用，需要更大字就在这里调。</div>
+    <hr class="sep">
     <div class="section-title" style="margin-top:0">数据</div>
     <div class="btn-row">
       <button class="btn ghost sm" id="s-export">导出 JSON</button>
@@ -1197,7 +1206,7 @@ async function openSettings() {
   const s = sheet('设置', node);
   const verNode = node.querySelector('#s-ver');
   appVersion().then((v) => {
-    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v23</b><br>
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v24</b><br>
     若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
   });
   const presetSel = node.querySelector('[data-preset]');
@@ -1286,7 +1295,22 @@ async function openSettings() {
     await copy(code);
     toast('本机配置码已复制，发到手机后在这页粘贴导入');
   };
-  /* ---- 云同步 ---- */
+  /* ---- 字体大小 ---- */
+const fsRow = node.querySelector('#fs-row');
+const markFs = () => {
+  const cur = localStorage.getItem('easytalk-fontscale') || '1';
+  fsRow.querySelectorAll('[data-fs]').forEach((b) => {
+    const on = b.dataset.fs === cur;
+    b.style.background = on ? 'var(--fjord)' : '';
+    b.style.color = on ? '#fff' : '';
+    b.style.borderColor = on ? 'var(--fjord)' : '';
+  });
+};
+markFs();
+fsRow.querySelectorAll('[data-fs]').forEach((b) => {
+  b.onclick = () => { applyFontScale(b.dataset.fs); markFs(); toast('字体大小已调整'); };
+});
+/* ---- 云同步 ---- */
   const cloudOut = node.querySelector('#cloud-out');
   cloudOut.textContent = Sync.statusText();
   const cloudOn = node.querySelector('[data-cloud-on]');
@@ -1467,6 +1491,13 @@ async function importConfigFromHash() {
     history.replaceState(null, '', location.pathname + location.search);
     return true;
   } catch { return false; }
+}
+
+/* 字体大小：整体等比缩放，存本机；v=1 时还原 */
+function applyFontScale(v) {
+  v = String(parseFloat(v));
+  try { localStorage.setItem('easytalk-fontscale', v); } catch { }
+  document.documentElement.style.zoom = parseFloat(v) === 1 ? '' : v;
 }
 
 async function boot() {
