@@ -1141,14 +1141,13 @@ async function openSettings() {
     <div class="btn-row"><button class="btn soft sm" id="s-test">测试两条通道</button>
       <button class="btn ghost sm" id="s-models">列出主用可用模型</button></div>
     <div class="muted" id="s-test-out" style="margin-top:8px;font-size:13px;line-height:1.6;white-space:pre-line">会分别真实请求主用和备用，各报各的结果。</div>
-    <div class="banner ok" style="margin-top:10px"><b>有三个免费档可以不花钱用</b>（有每日/每分钟次数限制，个人日常翻译完全够）。详见下方说明。</div>
+    <div class="banner ok" style="margin-top:10px"><b>默认已接好「内置免费通道」</b>：什么都不用配，打开就能翻译（公共免费模型，有频率限制）。想要更快更稳的质量，再按下面配自己的 Key。</div>
     <div class="muted" style="font-size:12px;line-height:1.7;margin-top:10px">
-      <b>推荐组合：主用 Gemini（质量最好）+ 备用 硅基流动（国内直连）</b> —— 出了大陆网自动切备用，两边都不耽误。<br>
-      <b>① Google Gemini（推荐·最省事，有 Gmail 就行）</b>：打开 aistudio.google.com → 用 Google 账号登录 → 左侧「Get API key」→ Create API key → 复制 AIza 开头的串。不用信用卡、不用充值。选「Google Gemini（免费）」预设即可。<span style="color:var(--rose)">注意：Google 的服务在中国大陆直连不通，需要在非大陆网络下使用。</span><br>
-      <b>② 硅基流动 SiliconFlow（免费·主打大陆直连）</b>：cloud.siliconflow.cn 手机号注册 + 个人实名（姓名+身份证号，不传证件照）→ 左侧「账户管理 → API 密钥」→ 新建 API 密钥 → 复制。模型填 <b>THUDM/GLM-4-9B-0414</b>（实测约 3 秒出结果，余额 0 也能调，长期免费；同账号下 Qwen/Qwen3-8B 也可用，但默认开推理、要 20 秒左右）。<br>
-      <b>③ OpenRouter 免费模型池</b>：openrouter.ai 注册 → Keys → Create Key；模型填 openrouter/free（自动挑当前可用的免费模型）。<b>免费额度约每天 50 次</b>，超了要等次日。<br>
-      <b>④ 付费但很便宜</b>：DeepSeek platform.deepseek.com（模型 deepseek-v4-flash，充 10 元用很久）、Kimi platform.moonshot.cn / platform.kimi.ai（模型 kimi-k3）。<br>
-      不确定自己能用哪些模型？点上面「<b>列出可用模型</b>」直接查。<br>
+      <b>推荐升级：主用 Gemini（质量最好，海外网络用）</b>：打开 aistudio.google.com → 用 Google 账号登录 → 左侧「Get API key」→ Create API key → 复制 AIza 开头的串。不用信用卡、不用充值。选「Google Gemini（免费）」预设即可。<span style="color:var(--rose)">注意：Google 的服务在中国大陆直连不通，需要在非大陆网络下使用。</span><br>
+      <b>硅基流动 SiliconFlow（免费·国内直连，配自己的专属通道）</b>：cloud.siliconflow.cn 手机号注册 + 个人实名（姓名+身份证号，不传证件照）→ 左侧「账户管理 → API 密钥」→ 新建 API 密钥 → 复制。模型填 <b>THUDM/GLM-4-9B-0414</b>（实测约 3 秒出结果，余额 0 也能调，长期免费）。<br>
+      <b>OpenRouter 免费模型池</b>：openrouter.ai 注册 → Keys → Create Key；模型填 openrouter/free（自动挑当前可用的免费模型）。<b>免费额度约每天 50 次</b>，超了要等次日。<br>
+      <b>付费但很便宜</b>：DeepSeek platform.deepseek.com（模型 deepseek-v4-flash，充 10 元用很久）、Kimi platform.moonshot.cn / platform.kimi.ai（模型 kimi-k3）。<br>
+      配了自己的 Key 后，翻译<b>优先走自己的通道</b>，不再占用公共通道限额。不确定能用哪些模型？点上面「<b>列出可用模型</b>」直接查。<br>
       Key <b>只显示一次</b>，请立即复制；它等同账号密码，别发给别人。
     <hr class="sep">
     <div class="section-title" style="margin-top:0">跨设备配置（手机 ⇄ 电脑）</div>
@@ -1198,7 +1197,7 @@ async function openSettings() {
   const s = sheet('设置', node);
   const verNode = node.querySelector('#s-ver');
   appVersion().then((v) => {
-    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v22</b><br>
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v23</b><br>
     若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
   });
   const presetSel = node.querySelector('[data-preset]');

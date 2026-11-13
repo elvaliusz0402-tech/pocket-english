@@ -121,6 +121,8 @@ const COOLDOWN = 10 * 60 * 1000;       // 某通道失败后 10 分钟内先走�
 /* 厂商模型换代很快，下面是 2026-10 校验过仍在售的名称。
    注意：moonshot-v1-8k 已于 2026-08-31 下线、deepseek-chat 于 2026-07-24 退役，填了必报 404。 */
 export const PRESETS = [
+  // 内置免费通道：走 Supabase Edge Function 代理，Key 在服务端，用户零配置
+  { id: 'builtin', free: true, name: '内置免费通道（打开即用·无需注册）', url: 'https://hizrmgxyomctqiesubmo.supabase.co/functions/v1/llm', model: 'THUDM/GLM-4-9B-0414' },
   // —— 免费档（无需信用卡，有速率限制，个人日常够用）——
   { id: 'gemini', free: true, name: '免费 · Google Gemini（质量最好）', url: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.5-flash' },
   // 实测 2026-10-29：GLM-4-9B-0414 约 3 秒出结果，Qwen3-8B 约 21 秒（它默认开推理），故默认用前者
@@ -140,8 +142,16 @@ const DEFAULT_BAK = {
   url: 'https://api.siliconflow.cn/v1', key: '', model: 'THUDM/GLM-4-9B-0414'
 };
 
+/* 新用户默认 = 内置免费通道（零配置打开就能翻译）；配过自己的 Key 则完全不受影响 */
+const BUILTIN = {
+  preset: 'builtin',
+  url: 'https://hizrmgxyomctqiesubmo.supabase.co/functions/v1/llm',
+  key: 'sb_publishable_HbIzpNYveQ5m7Ad-zMD4ug_7ytmWOnr',   /* 发布密钥，本就公开，防滥用的门槛而已 */
+  model: 'THUDM/GLM-4-9B-0414'
+};
+
 export async function llmConfig() {
-  const c = (await Store.getKV(LLM_KEY, null)) || { enabled: false, url: '', key: '', model: '', preset: 'gemini' };
+  const c = (await Store.getKV(LLM_KEY, null)) || { enabled: true, ...BUILTIN };
   return c;
 }
 export async function backupConfig() {
@@ -180,6 +190,7 @@ export function normalizeBaseUrl(raw) {
   let u = String(raw || '').trim().replace(/\/+$/, '');
   if (!u) return '';
   if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+  if (/\/functions\/v1\//i.test(u)) return u;      // Supabase Edge Function：路径已完整，不补
   if (/\/v\d+[a-z-]*$/i.test(u)) return u;         // 已带版本号（/v1、/v1beta…）
   if (/\/openai$/i.test(u)) return u;              // Gemini 兼容端点 …/v1beta/openai
   if (/\/chat\/completions$/i.test(u)) return u.replace(/\/chat\/completions$/i, '');
