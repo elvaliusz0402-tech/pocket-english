@@ -428,8 +428,8 @@ async function runOCR(file) {
     const cleaned = cleanText(text);
     document.getElementById('ocr-raw').value = cleaned;
     if (!cleaned.trim()) {
-      status.textContent = '识别完成，但没有提取到可信的英文——换一张更清晰、文字更大的截图试试';
-      toast('没识别出有效英文，建议换清晰截图', 2600);
+      status.textContent = '没识别出可信英文。请拍正、拍清晰、让文字占满画面；也可以在下方文本框手动粘贴台词';
+      toast('没识别出有效英文，建议正对文字拍清晰些', 2800);
     }
     renderSents(splitSentences(cleaned));
   } catch (e) {
@@ -1213,7 +1213,7 @@ async function openSettings() {
   const s = sheet('设置', node);
   const verNode = node.querySelector('#s-ver');
   appVersion().then((v) => {
-    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v27</b><br>
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v28</b><br>
     若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
   });
   const presetSel = node.querySelector('[data-preset]');

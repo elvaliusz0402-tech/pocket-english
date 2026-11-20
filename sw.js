@@ -1,5 +1,5 @@
 /* Service Worker：离线可用（应用外壳 + 语料库） */
-const VERSION = 'pe-v27';
+const VERSION = 'pe-v28';
 const SHELL = [
   './',
   './index.html',
@@ -21,6 +21,8 @@ const SHELL = [
   './data/phrasebook.js',
   './data/packs.js',
   './audio/index.json',
+  // OCR 引擎（约 10M）不放进安装期预缓存：避免每次版本更新都重下 10M 拖慢国内首次打开。
+  // 改为「首次用到图片识别时才按需下载」，之后由下方 fetch 的缓存优先逻辑永久离线可用。
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png'
@@ -71,8 +73,23 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  // 跨域 CDN（OCR 引擎 / 大模型接口）：直接走网络，不做缓存拦截
+  // 跨域 CDN（大模型接口）：直接走网络，不做缓存拦截
   if (url.origin !== self.location.origin) return;
+
+  // 本地 OCR 引擎（约 10M，版本固定不变）：缓存优先，首次下载后永久离线可用，
+  // 不再每次都回源、也不受 jsdelivr/tessdata 等外部 CDN 影响
+  if (url.pathname.includes('/vendor/tesseract/')) {
+    e.respondWith(
+      caches.match(req).then((hit) => hit || fetch(req).then((res) => {
+        if (res && res.status === 200) {
+          const copy = res.clone();
+          caches.open(VERSION).then((c) => c.put(req, copy)).catch(() => {});
+        }
+        return res;
+      }).catch(() => caches.match(req)))
+    );
+    return;
+  }
 
   // 网络优先：保证更新即时生效；断网时回落到缓存
   e.respondWith(
