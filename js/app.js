@@ -601,9 +601,9 @@ function openEditor(entry, preset = {}) {
     sourceNote: '', example: '', note: ''
   };
   const node = el(`<div>
-    <label class="field"><span>英文原句（地道说法）</span><input type="text" data-en value="${esc(preset.en || e.en)}"></label>
+    <label class="field"><span>英文原句（地道说法，与改写二选一）</span><input type="text" data-en value="${esc(preset.en || e.en)}"></label>
     <label class="field"><span>中文意思</span><input type="text" data-cn value="${esc(preset.cn || e.cn)}" placeholder="按意思搜索靠它"></label>
-    <label class="field"><span>自然改写（更口语的说法，可留空）</span><input type="text" data-nat value="${esc(e.natural)}"></label>
+    <label class="field"><span>自然改写（更口语的说法，与原句二选一）</span><input type="text" data-nat value="${esc(e.natural)}"></label>
     <label class="field"><span>例句 / 语境</span><input type="text" data-ex value="${esc(e.example)}"></label>
     <label class="field"><span>使用提醒</span><input type="text" data-note value="${esc(e.note)}"></label>
     <label class="field"><span>场景</span><select data-scene>${SCENES.map((s) => `<option value="${s.id}" ${e.scene === s.id ? 'selected' : ''}>${s.name}</option>`).join('')}</select></label>
@@ -632,7 +632,9 @@ function openEditor(entry, preset = {}) {
       srs: e.srs || newSRS(),
       updatedAt: Date.now()
     };
-    if (!obj.en) { toast('英文原句不能为空'); return; }
+    if (!obj.en && !obj.natural) { toast('「英文原句」和「自然改写」至少填一个'); return; }
+    /* 只填了自然改写 → 把它转成主句（列表展示/搜索/朗读都靠 en 字段） */
+    if (!obj.en && obj.natural) { obj.en = obj.natural; obj.natural = ''; }
     try {
       await Store.put(obj);
       await load();
@@ -1211,7 +1213,7 @@ async function openSettings() {
   const s = sheet('设置', node);
   const verNode = node.querySelector('#s-ver');
   appVersion().then((v) => {
-    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v26</b><br>
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v27</b><br>
     若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
   });
   const presetSel = node.querySelector('[data-preset]');
