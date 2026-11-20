@@ -620,6 +620,7 @@ function openEditor(entry, preset = {}) {
     const v = (k) => node.querySelector(`[data-${k}]`).value;
     const obj = {
       ...e,
+      id: e.id || uid(),                       /* 新建必须有 id：IndexedDB keyPath='id' */
       en: v('en').trim(),
       cn: v('cn').trim(),
       natural: v('nat').trim(),
@@ -632,12 +633,16 @@ function openEditor(entry, preset = {}) {
       updatedAt: Date.now()
     };
     if (!obj.en) { toast('英文原句不能为空'); return; }
-    await Store.put(obj);
-    await load();
-    s.close();
-    renderLibrary();
-    updateSub();
-    toast('已保存');
+    try {
+      await Store.put(obj);
+      await load();
+      s.close();
+      renderLibrary();
+      updateSub();
+      toast('已保存');
+    } catch (err) {
+      toast('保存失败：' + (err && err.message ? err.message : '本地存储不可用'));
+    }
   };
   node.querySelector('[data-del]')?.addEventListener('click', async () => {
     const ok = await confirmSheet('删除这条表达？', e.en, '删除');

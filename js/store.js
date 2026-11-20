@@ -48,16 +48,17 @@ export const Store = {
     return wrap(os.get(id));
   },
   async put(entry) {
+    const safe = { ...cleanEntry(entry), id: entry.id || uid() };
     const os = await tx(STORE, 'readwrite');
-    await wrap(os.put(cleanEntry(entry)));
-    return entry;
+    await wrap(os.put(safe));
+    return safe;
   },
   async putMany(list) {
     const db = await openDB();
     return new Promise((resolve, reject) => {
       const t = db.transaction(STORE, 'readwrite');
       const os = t.objectStore(STORE);
-      list.forEach((e) => os.put(cleanEntry(e)));
+      list.forEach((e) => os.put({ ...cleanEntry(e), id: e.id || uid() }));
       t.oncomplete = () => resolve(list.length);
       t.onerror = () => reject(t.error);
     });
