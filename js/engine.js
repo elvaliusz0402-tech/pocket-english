@@ -198,7 +198,7 @@ export function normalizeBaseUrl(raw) {
 }
 
 /** 用指定配置发一次请求（主用/备用共用） */
-async function chatWith(cfg, messages, { json = true, temperature = 0.3, timeout = 45000 } = {}) {
+async function chatWith(cfg, messages, { json = true, temperature = 0.3, timeout = 45000, retryOnNetFail = true } = {}) {
   if (!usable(cfg)) throw new Error('未配置');
   const model = String(cfg.model || '').trim() || (PRESETS.find((p) => p.id === cfg.preset)?.model || '');
   const makeBody = (useJson) => {
@@ -217,7 +217,9 @@ async function chatWith(cfg, messages, { json = true, temperature = 0.3, timeout
   try {
     res = await send(true);
   } catch (e) {
-    // fetch 直接失败 = 网络抖动 / 不通 / 被浏览器拦截。先原样重试一次（手机网络最容易在这一步掉链子）
+    // fetch 直接失败 = 网络抖动 / 不通 / 被浏览器拦截。
+    // 还有退路时（retryOnNetFail=false）立即抛出去换下一条通道，别在这里翻倍耗时间
+    if (!retryOnNetFail) throw new Error('连不上（网络不通或该服务商不允许网页直连）');
     try {
       await new Promise((r) => setTimeout(r, 800));
       res = await send(true);
@@ -259,6 +261,7 @@ export async function chatAuto(messages, opts = {}) {
   const [primary, backup, h] = [await llmConfig(), await backupConfig(), await health()];
   const pOk = usable(primary), bOk = usable(backup);
   if (!pOk && !bOk) return { ok: false, errors: [] };
+  const isBuiltinCfg = (c) => !!(c && c.preset === 'builtin');
 
   const cooling = (w) => h[w] && Date.now() - h[w] < COOLDOWN;
   const order = [];
@@ -269,13 +272,13 @@ export async function chatAuto(messages, opts = {}) {
   if (!order.length) { if (pOk) order.push(['primary', primary]); if (bOk) order.push(['backup', backup]); }
 
   const errors = [];
+  /* 有退路（多条通道或有内置兜底）时，每条只给 15 秒，总时长控制在半分钟内；
+     没有任何退路才允许等满 45 秒，且网络失败可以重试一次 */
+  const hasOther = order.length > 1 || (!isBuiltinCfg(primary) && !isBuiltinCfg(backup));
   for (const [which, cfg] of order) {
     try {
-      // 有退路时主用只等 18 秒就换人，别让用户干等；没退路才等满 45 秒
-      const timeout = (which === 'primary' && bOk && order.length > 1)
-        ? Math.min(opts.timeout || 18000, 18000)
-        : (opts.timeout || 45000);
-      const data = await chatWith(cfg, messages, { ...opts, timeout });
+      const timeout = hasOther ? Math.min(opts.timeout || 15000, 15000) : (opts.timeout || 45000);
+      const data = await chatWith(cfg, messages, { ...opts, timeout, retryOnNetFail: !hasOther });
       await clearFail(which);
       return {
         ok: true, data, provider: which, label: providerLabel(cfg), errors,
@@ -288,6 +291,20 @@ export async function chatAuto(messages, opts = {}) {
         msg: String((e && e.message) || e).slice(0, 150)
       });
       await markFail(which);
+    }
+  }
+
+  /* 最后兜底：主用、备用都失败（Key 失效/地区限制/服务商故障）→ 自动落内置免费通道。
+     这是「翻译永不了死机」的保险：内置通道免费、服务端代理，任何地区都能用。 */
+  if (!isBuiltinCfg(primary) && !isBuiltinCfg(backup)) {
+    try {
+      const data = await chatWith({ enabled: true, ...BUILTIN }, messages, { ...opts, timeout: 30000, retryOnNetFail: true });
+      return {
+        ok: true, data, provider: 'builtin', label: '内置免费通道', errors,
+        fellFrom: (errors[0] && errors[0].label) || ''
+      };
+    } catch (e) {
+      errors.push({ provider: 'builtin', label: '内置免费通道', msg: String((e && e.message) || e).slice(0, 150) });
     }
   }
   return { ok: false, errors };
@@ -344,12 +361,12 @@ Return JSON: {"variants":[{"en":string,"tone":string,"scene":string,"tip":string
     if (r.ok) {
       const list = (r.data.variants || []).filter((v) => v && v.en);
       if (list.length) {
-        return {
-          variants: list.slice(0, 3), source: 'ai', matched: null,
-          provider: r.label,                 // 实际出结果的服务商名
-          viaBackup: r.provider === 'backup', // 是不是走了备用通道
-          fellFrom: r.fellFrom || ''          // 从哪家退回来的
-        };
+      return {
+        variants: list.slice(0, 3), source: 'ai', matched: null,
+        provider: r.label,                 // 实际出结果的服务商名
+        viaBackup: r.provider !== 'primary', // 走了备用或内置兜底
+        fellFrom: r.fellFrom || ''          // 从哪家退回来的
+      };
       }
       // 模型返回了但没内容 —— 也不给本地结果冒充翻译，由用户决定
       return { variants: [], source: 'none', aiError: `「${r.label}」返回内容为空，请检查模型名是否正确`, localHit: local };

@@ -1211,7 +1211,7 @@ async function openSettings() {
   const s = sheet('设置', node);
   const verNode = node.querySelector('#s-ver');
   appVersion().then((v) => {
-    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v24</b><br>
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v26</b><br>
     若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
   });
   const presetSel = node.querySelector('[data-preset]');
@@ -1446,7 +1446,7 @@ async function renderBanner() {
   } else if (st.hasBackup) {
     html = `<div class="banner ok">AI 已开启（走<b>备用：${esc(st.backupLabel)}</b>）· 主用未配置，建议在设置里补上　<span class="muted">${esc(ver)}</span></div>`;
   } else if (st.incomplete) {
-    html = `<div class="banner warn">AI 配置不完整（${esc(st.missing.join('、'))}没填），所以翻译不出来。<a href="#" id="to-settings" style="color:var(--fjord);font-weight:700">去设置补全 →</a>　<span class="muted">${esc(ver)}</span></div>`;
+    html = `<div class="banner warn">AI 配置不完整（${esc(st.missing.join('、'))}没填），翻译会自动走「内置免费通道」兜底。<a href="#" id="to-settings" style="color:var(--fjord);font-weight:700">去补全自己的 Key →</a>　<span class="muted">${esc(ver)}</span></div>`;
   } else {
     html = `<div class="banner">离线语料库模式 · 内置 ${corpus().length} 组说法，贴不上就不硬凑。<a href="#" id="to-settings" style="color:var(--fjord);font-weight:700">接入大模型 →</a>　<span class="muted">${esc(ver)}</span></div>`;
   }
