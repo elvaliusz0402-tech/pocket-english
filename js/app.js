@@ -278,11 +278,17 @@ async function onGenerate() {
 function renderVariants(out, cn, res) {
   /* AI 已配置但失败：绝不拿本地句子冒充翻译。给出原因 + 用户自己选 */
   if (!res.variants.length && res.aiError) {
+    const cloudQuota = /402|balance is insufficient/i.test(String(res.aiError));
     out.innerHTML = `<div class="card">
-      <div class="banner warn">大模型没能用上，本次没有生成翻译<br>
-        <span class="muted">${esc(String(res.aiError).slice(0, 200))}</span></div>
-      <div class="muted" style="font-size:13px;line-height:1.6">常见原因：接口地址不对（应如 <b>https://api.deepseek.com</b>，程序会自动补 <b>/v1</b>）、Key 失效、模型名写错、或该服务商不允许网页直连。<br>
-      去「设置 → 测试连接」可以直接定位。</div>
+      <div class="banner warn">${cloudQuota
+        ? '云端翻译通道暂时不可用，本次没有生成翻译<br>'
+          + '<span class="muted">这是统一服务端的额度问题，与你的网络、设备、地区无关，也不需要你配置任何东西。</span>'
+        : '大模型没能用上，本次没有生成翻译<br>'
+          + `<span class="muted">${esc(String(res.aiError).slice(0, 200))}</span>`}</div>
+      ${cloudQuota
+        ? '<div class="muted" style="font-size:13px;line-height:1.6">可以先看本地近似说法应急，或稍后点「重试」——服务端恢复后无需任何更新即可自动生效。</div>'
+        : `<div class="muted" style="font-size:13px;line-height:1.6">常见原因：接口地址不对（应如 <b>https://api.deepseek.com</b>，程序会自动补 <b>/v1</b>）、Key 失效、模型名写错、或该服务商不允许网页直连。<br>
+      去「设置 → 测试连接」可以直接定位。</div>`}
       <div class="btn-row" style="margin-top:12px">
         <button class="btn sm" id="cap-retry">重试</button>
         ${res.localHit ? `<button class="btn sm ghost" id="cap-local">看本地近似说法</button>` : ''}
@@ -1213,7 +1219,7 @@ async function openSettings() {
   const s = sheet('设置', node);
   const verNode = node.querySelector('#s-ver');
   appVersion().then((v) => {
-    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v28</b><br>
+    verNode.innerHTML = `程序版本：<b>${esc(v)}</b> · 线上最新：<b>pe-v29</b><br>
     若两者不一致，说明手机还在跑旧缓存：完全退出应用后重新打开一次即可更新（数据不会丢）。`;
   });
   const presetSel = node.querySelector('[data-preset]');
